@@ -1,30 +1,28 @@
-import type { Metadata } from "next";
-import "./globals.css";
-
-// Utilisation de polices système pour éviter les problèmes de connectivité
-const fontVariables = {
-  "--font-geist-sans": "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif",
-  "--font-geist-mono": "ui-monospace, SFMono-Regular, 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace"
-};
+import type React from "react"
+import type { Metadata } from "next"
+import { GeistSans } from "geist/font/sans"
+import { GeistMono } from "geist/font/mono"
+import { Analytics } from "@vercel/analytics/next"
+import { Suspense } from "react"
+import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "TchopMate",
-  description: "Votre partenaire en réservation de restaurant",
-};
+  title: "TchopMate - Restaurant Universitaire",
+  description: "Application de restaurant universitaire pour étudiants",
+  generator: "v0.app",
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body
-        className="antialiased"
-        style={fontVariables as React.CSSProperties}
-      >
-        {children}
+    <html lang="fr">
+      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+        <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+        <Analytics />
       </body>
     </html>
-  );
+  )
 }
