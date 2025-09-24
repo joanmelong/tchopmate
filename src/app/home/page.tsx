@@ -17,7 +17,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Logo size="sm" />
+              <Logo size="small" />
               <div className="hidden md:block">
                 <h1 className="text-xl font-semibold text-gray-900">Bienvenue sur TchopMate</h1>
               </div>
@@ -124,7 +124,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <Logo size="sm" className="text-white" />
+                <Logo size="small"  />
               </div>
               <p className="text-gray-300 text-sm">
                 TchopMate - Votre compagnon pour les repas universitaires. Commandez facilement et savourez les
