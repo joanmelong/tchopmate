@@ -8,6 +8,7 @@ export function GoogleLogin() {
       provider: "google",
       options: {
         redirectTo: "http://localhost:3000/home", // après succès
+        scopes: "openid email profile", // Demander les informations de profil
       },
     });
     if (error) console.error("Erreur Google Auth:", error);
