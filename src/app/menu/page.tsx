@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/logo"
+import { supabase } from "@/lib/supabaseClient"
 import {
   Bell,
   Clock,
@@ -21,8 +22,18 @@ import {
   Heart,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { GoogleLogin } from "@/components/auth/GoogleLogin"
 
 export default function MenuPage() {
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (data.user) setUser(data.user);
+      getUser();
+    };
+  }, []);
   const router = useRouter()
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -173,7 +184,19 @@ export default function MenuPage() {
               <Button variant="ghost" size="sm" onClick={() => router.back()} className="hover:bg-orange-50">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <Logo size="sm" />
+              <Logo size="small" />
+              <div className="p-4">
+                {user ? (
+                  <div>
+                    <h1>{user.email}</h1>
+                    <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()}>
+                      Déconnexion
+                    </Button>
+                  </div>
+                ) : (
+                  <GoogleLogin />
+                )}
+              </div>
               <div className="hidden md:block">
                 <h1 className="text-xl font-semibold text-gray-900">Menu du jour</h1>
               </div>
@@ -365,7 +388,7 @@ export default function MenuPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <Logo size="sm" className="text-white" />
+                <Logo size="small" />
               </div>
               <p className="text-gray-300 text-sm">
                 TchopMate - Votre compagnon pour les repas universitaires. Commandez facilement et savourez les

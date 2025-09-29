@@ -6,8 +6,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/logo"
 import { Bell, Clock, MapPin, Star, Calendar, Settings, LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabaseClient"
+import { GoogleLogin } from "@/components/auth/GoogleLogin"
 
 export default function HomePage() {
+  const [user, setUser] = useState<any>(null);
   const router = useRouter()
 
   return (
@@ -30,7 +34,18 @@ export default function HomePage() {
                   3
                 </Badge>
               </Button>
-
+              <div className="p-4">
+                {user ? (
+                  <div>
+                    <h1>{user.email}</h1>
+                    <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()}>
+                      Déconnexion
+                    </Button>
+                  </div>
+                ) : (
+                  <GoogleLogin />
+                )}
+              </div>
               <div className="flex items-center space-x-2">
                 <Avatar className="h-8 w-8 cursor-pointer">
                   <AvatarImage src="/student-avatar.png" />

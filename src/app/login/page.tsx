@@ -13,8 +13,11 @@ import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabaseClient"
+import { GoogleLogin } from "@/components/auth/GoogleLogin"
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("")
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
@@ -74,6 +77,18 @@ export default function LoginPage() {
 
   const handleForgotPassword = () => {
     alert("Redirection vers la réinitialisation du mot de passe")
+  }
+
+  const handleEmailLogin = async () => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: formData.emailOrPhone,
+      password: formData.password,
+    })
+    if (error) {
+      setErrors({ general: error.message })
+    } else {
+      router.push("/home")
+    }
   }
 
   return (
@@ -175,7 +190,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <Button type="button" variant="outline" className="w-full bg-transparent" onClick={handleGoogleLogin}>
+              {/* <Button type="button" variant="outline" className="w-full bg-transparent" onClick={handleGoogleLogin}>
                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                   <path
                     fill="currentColor"
@@ -195,7 +210,8 @@ export default function LoginPage() {
                   />
                 </svg>
                 Se connecter avec Google
-              </Button>
+              </Button> */}
+              <GoogleLogin />
             </form>
 
             <div className="mt-6 text-center text-sm">
