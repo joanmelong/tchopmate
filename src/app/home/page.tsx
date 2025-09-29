@@ -6,9 +6,32 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/logo"
 import { Bell, Clock, MapPin, Star, Calendar, Settings, LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabaseClient"
+import { GoogleLogin } from "@/components/auth/GoogleLogin"
 
 export default function HomePage() {
+  const [user, setUser] = useState<any>(null);
   const router = useRouter()
+
+  useEffect(() => {
+    // Récupérer l'utilisateur actuel
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+
+    getUser();
+
+    // Écouter les changements d'authentification
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
@@ -30,17 +53,26 @@ export default function HomePage() {
                   3
                 </Badge>
               </Button>
-
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8 cursor-pointer">
-                  <AvatarImage src="/student-avatar.png" />
-                  <AvatarFallback className="bg-orange-100 text-orange-600">ET</AvatarFallback>
-                </Avatar>
-                <div className="hidden md:block">
-                  <p className="text-sm font-medium text-gray-900">Étudiant</p>
-                  <p className="text-xs text-gray-500">Université de Yaoundé</p>
+              {user ? (
+                <div className="flex items-center space-x-2">
+                  <Avatar className="h-8 w-8 cursor-pointer">
+                    <AvatarImage src={user.user_metadata?.avatar_url || "/student-avatar.png"} />
+                    <AvatarFallback className="bg-orange-100 text-orange-600">
+                      {user.user_metadata?.full_name?.charAt(0) || user.email?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="hidden md:block">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user.user_metadata?.full_name || "Utilisateur"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {user.user_metadata?.school || "Université de Yaoundé"}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <GoogleLogin />
+              )}
 
               <Button variant="ghost" size="sm">
                 <Settings className="h-5 w-5" />
