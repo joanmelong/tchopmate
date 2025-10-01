@@ -11,8 +11,11 @@ import { Logo } from "@/components/logo"
 import { Eye, EyeOff, Mail, Phone, User, Lock } from "lucide-react"
 import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabaseClient"
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState({
@@ -27,7 +30,6 @@ export default function RegisterPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }))
     }
@@ -75,21 +77,37 @@ export default function RegisterPage() {
 
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      alert("Inscription réussie ! Un email de confirmation a été envoyé.")
-    }, 2000)
-  }
+    try {
+      // Inscription avec Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            username: formData.username,
+            phone: formData.phone,
+          },
+        },
+      })
 
-  const handleGoogleSignUp = () => {
-    alert("Inscription avec Google en cours de développement")
+      if (error) {
+        setErrors({ general: error.message })
+        setIsLoading(false)
+        return
+      }
+
+      // Succès
+      alert("Inscription réussie ! Vous pouvez maintenant vous connecter.")
+      router.push("/login")
+    } catch (error) {
+      setErrors({ general: "Une erreur est survenue. Veuillez réessayer." })
+      setIsLoading(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/">
             <Logo size="default" />
@@ -103,7 +121,12 @@ export default function RegisterPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Username */}
+              {errors.general && (
+                <Alert variant="destructive">
+                  <AlertDescription>{errors.general}</AlertDescription>
+                </Alert>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="username">Nom d'utilisateur</Label>
                 <div className="relative">
@@ -124,7 +147,6 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
@@ -145,7 +167,6 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* Phone */}
               <div className="space-y-2">
                 <Label htmlFor="phone">Numéro de téléphone</Label>
                 <div className="relative">
@@ -166,7 +187,6 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* Password */}
               <div className="space-y-2">
                 <Label htmlFor="password">Mot de passe</Label>
                 <div className="relative">
@@ -194,7 +214,6 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* Confirm Password */}
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
                 <div className="relative">
@@ -222,12 +241,10 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* Submit Button */}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Inscription en cours..." : "S'inscrire"}
               </Button>
 
-              {/* Divider */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
@@ -237,12 +254,11 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Google Sign Up */}
               <Button
                 type="button"
                 variant="outline"
                 className="w-full bg-transparent hover:shadow-lg focus:shadow-lg transition-shadow duration-200"
-                onClick={handleGoogleSignUp}
+                onClick={() => alert("Inscription avec Google en cours de développement")}
               >
                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                   <path
@@ -266,7 +282,6 @@ export default function RegisterPage() {
               </Button>
             </form>
 
-            {/* Login Link */}
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Déjà un compte ? </span>
               <Link href="/login" className="text-primary hover:underline">
