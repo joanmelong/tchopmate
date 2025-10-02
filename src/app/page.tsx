@@ -7,15 +7,15 @@ import { Footer } from "@/components/ui/footer"
 
 export default function WelcomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+    <div className="min-h-screen bg-yellow-600 bg-gradient-to-b from-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <header className="text-center mb-12">
           <div className="flex justify-center mb-6">
             <Logo size="large" />
           </div>
-          <h1 className="text-3xl md:text-5xl font-bold text-balance mb-4">Bienvenue sur TchopMate</h1>
-          <p className="text-lg text-muted-foreground text-balance max-w-2xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-bold text-balance mb-4">Bienvenue sur TchopMate</h1>
+          <p className="text-xl text-muted-foreground text-balance max-w-2xl mx-auto">
             Votre application de restaurant universitaire. Commandez facilement vos repas et découvrez les menus du
             jour.
           </p>

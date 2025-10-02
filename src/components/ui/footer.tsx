@@ -45,16 +45,16 @@ function Footer({ className, ...props }: React.ComponentProps<'div'>) {
             <div>
               <h3 className="font-semibold mb-4">Contact</h3>
               <div className="space-y-2 text-sm text-gray-300">
-                <p>📍 Campus Central, Université de Yaoundé</p>
+                <p>📍 Institut Universitaire Saint Jean, Eyang</p>
                 <p>📞 +237 6XX XXX XXX</p>
-                <p>✉️ contact@tchopmate.cm</p>
+                <p>✉️ tchopmate.restoapp@gmail.com</p>
                 <p>🕒 Lun-Ven: 7h-20h | Sam-Dim: 8h-18h</p>
               </div>
             </div>
           </div>
 
           <div className="border-t border-gray-800 mt-8 pt-6 text-center text-sm text-gray-400">
-            <p>&copy; 2024 TchopMate. Tous droits réservés.</p>
+            <p>&copy; 2025 TchopMate. Tous droits réservés.</p>
           </div>
         </div>
       </footer>
