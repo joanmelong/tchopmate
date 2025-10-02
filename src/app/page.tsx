@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Logo } from "@/components/logo"
 import { Users, Clock, Star, ChefHat } from "lucide-react"
 import Link from "next/link"
+import { Footer } from "@/components/ui/footer"
 
 export default function WelcomePage() {
   return (
@@ -75,12 +76,12 @@ export default function WelcomePage() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Footer */}
-        <footer className="text-center mt-12 text-muted-foreground">
-          <p>&copy; 2024 TchopMate. Fait avec ❤️ pour les étudiants.</p>
-        </footer>
+        {/* Ancien footer */}
+        {/* <p>&copy; 2024 TchopMate. Fait avec ❤️ pour les étudiants.</p> */}
       </div>
+      {/* Nouveau Footer */}
+      <Footer />
     </div>
+    
   )
 }
