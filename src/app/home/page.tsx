@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { GoogleLogin } from "@/components/auth/GoogleLogin"
+import { Footer } from "@/components/ui/footer"
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null);
@@ -34,15 +35,15 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
+    <div className="min-h-screen bg-yellow-600 bg-gradient-to-b from-background">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <Logo size="small" />
-              <div className="hidden md:block">
-                <h1 className="text-xl font-semibold text-gray-900">Bienvenue sur TchopMate</h1>
+              <div className="hidden md:block items-center justify-center">
+                <h1 className="text-xl font-semibold text-yellow-600">Bienvenue</h1>
               </div>
             </div>
 
@@ -90,7 +91,7 @@ export default function HomePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 text-white">
+          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold mb-2">Bon appétit ! 🍽️</h2>
@@ -151,61 +152,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="bg-black text-white mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Logo size="small"  />
-              </div>
-              <p className="text-gray-300 text-sm">
-                TchopMate - Votre compagnon pour les repas universitaires. Commandez facilement et savourez les
-                meilleurs plats du campus.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Liens utiles</h3>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    À propos
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    FAQ
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Conditions d'utilisation
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Contact</h3>
-              <div className="space-y-2 text-sm text-gray-300">
-                <p>📍 Campus Central, Université de Yaoundé</p>
-                <p>📞 +237 6XX XXX XXX</p>
-                <p>✉️ contact@tchopmate.cm</p>
-                <p>🕒 Lun-Ven: 7h-20h | Sam-Dim: 8h-18h</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-6 text-center text-sm text-gray-400">
-            <p>&copy; 2024 TchopMate. Tous droits réservés.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
