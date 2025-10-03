@@ -186,20 +186,9 @@ export default function MenuPage() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <Logo size="small" />
-              <div className="p-4">
-                {user ? (
-                  <div>
-                    <h1>{user.email}</h1>
-                    <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()}>
-                      Déconnexion
-                    </Button>
-                  </div>
-                ) : (
-                  <GoogleLogin />
-                )}
-              </div>
+              
               <div className="hidden md:block">
-                <h1 className="text-xl font-semibold text-gray-900">Menu du jour</h1>
+                <h1 className="text-xl font-semibold text-yellow-600">Menu du jour</h1>
               </div>
             </div>
 
@@ -225,10 +214,19 @@ export default function MenuPage() {
               <Button variant="ghost" size="sm">
                 <Settings className="h-5 w-5" />
               </Button>
-
-              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                <LogOut className="h-5 w-5" />
-              </Button>
+              <div className="p-4">
+                {user ? (
+                  <div>
+                    <h1>{user.email}</h1>
+                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                      <LogOut className="h-5 w-5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <GoogleLogin />
+                )}
+              </div>
+              
             </div>
           </div>
         </div>

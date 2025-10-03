@@ -35,15 +35,15 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
+    <div className="min-h-screen bg-yellow-600 bg-gradient-to-b from-background">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <Logo size="small" />
-              <div className="hidden md:block">
-                <h1 className="text-xl font-semibold text-gray-900">Bienvenue sur TchopMate</h1>
+              <div className="hidden md:block items-center justify-center">
+                <h1 className="text-xl font-semibold text-yellow-600">Bienvenue</h1>
               </div>
             </div>
 
@@ -91,7 +91,7 @@ export default function HomePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 text-white">
+          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold mb-2">Bon appétit ! 🍽️</h2>
