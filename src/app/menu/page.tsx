@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/logo"
+import { supabase } from "@/lib/supabaseClient"
 import {
   Bell,
   Clock,
@@ -21,8 +22,19 @@ import {
   Heart,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { GoogleLogin } from "@/components/auth/GoogleLogin"
+import { Footer } from "@/components/ui/footer"
 
 export default function MenuPage() {
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (data.user) setUser(data.user);
+      getUser();
+    };
+  }, []);
   const router = useRouter()
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -164,7 +176,7 @@ export default function MenuPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
+    <div className="min-h-screen bg-yellow-600 bg-gradient-to-b from-background">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -173,9 +185,10 @@ export default function MenuPage() {
               <Button variant="ghost" size="sm" onClick={() => router.back()} className="hover:bg-orange-50">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <Logo size="sm" />
+              <Logo size="small" />
+              
               <div className="hidden md:block">
-                <h1 className="text-xl font-semibold text-gray-900">Menu du jour</h1>
+                <h1 className="text-xl font-semibold text-yellow-600">Menu du jour</h1>
               </div>
             </div>
 
@@ -201,10 +214,19 @@ export default function MenuPage() {
               <Button variant="ghost" size="sm">
                 <Settings className="h-5 w-5" />
               </Button>
-
-              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                <LogOut className="h-5 w-5" />
-              </Button>
+              <div className="p-4">
+                {user ? (
+                  <div>
+                    <h1>{user.email}</h1>
+                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                      <LogOut className="h-5 w-5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <GoogleLogin />
+                )}
+              </div>
+              
             </div>
           </div>
         </div>
@@ -360,61 +382,7 @@ export default function MenuPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-black text-white mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Logo size="sm" className="text-white" />
-              </div>
-              <p className="text-gray-300 text-sm">
-                TchopMate - Votre compagnon pour les repas universitaires. Commandez facilement et savourez les
-                meilleurs plats du campus.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Liens utiles</h3>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    À propos
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    FAQ
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Conditions d'utilisation
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Contact</h3>
-              <div className="space-y-2 text-sm text-gray-300">
-                <p>📍 Campus Central, Université de Yaoundé</p>
-                <p>📞 +237 6XX XXX XXX</p>
-                <p>✉️ contact@tchopmate.cm</p>
-                <p>🕒 Lun-Ven: 7h-20h | Sam-Dim: 8h-18h</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-6 text-center text-sm text-gray-400">
-            <p>&copy; 2024 TchopMate. Tous droits réservés.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
