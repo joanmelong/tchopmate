@@ -237,7 +237,7 @@ export default function MenuPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 text-white">
+          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white">
             <h2 className="text-2xl font-bold mb-2">Menu du jour - Samedi 03 Octobre</h2>
             <p className="text-orange-100">Découvrez tous nos plats, boissons et desserts disponibles aujourd'hui</p>
           </div>
