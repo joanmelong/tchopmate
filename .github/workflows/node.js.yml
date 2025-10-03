@@ -23,5 +23,5 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # - name: Run tests
+    # - name: Run tests
        # run: npm test to implement when I'll learn CI/CD 😭
