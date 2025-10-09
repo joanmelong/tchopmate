@@ -24,6 +24,7 @@ import {
 import { useRouter } from "next/navigation"
 import { GoogleLogin } from "@/components/auth/GoogleLogin"
 import { Footer } from "@/components/ui/footer"
+import Image from "next/image"
 
 export default function MenuPage() {
   const [user, setUser] = useState<any>(null);
@@ -188,7 +189,7 @@ export default function MenuPage() {
               <Logo size="small" />
               
               <div className="hidden md:block">
-                <h1 className="text-xl font-semibold text-yellow-600">Menu du jour</h1>
+                <h1 className="text-xl font-semibold text-yellow-600">Menu</h1>
               </div>
             </div>
 
@@ -207,7 +208,7 @@ export default function MenuPage() {
                 </Avatar>
                 <div className="hidden md:block">
                   <p className="text-sm font-medium text-gray-900">Étudiant</p>
-                  <p className="text-xs text-gray-500">Université de Yaoundé</p>
+                  <p className="text-xs text-gray-500">Université Saint Jean</p>
                 </div>
               </div>
 
@@ -236,8 +237,8 @@ export default function MenuPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 text-white">
-            <h2 className="text-2xl font-bold mb-2">Menu du jour - Lundi 23 Septembre</h2>
+          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white">
+            <h2 className="text-2xl font-bold mb-2">Menu du jour - Samedi 03 Octobre</h2>
             <p className="text-orange-100">Découvrez tous nos plats, boissons et desserts disponibles aujourd'hui</p>
           </div>
         </div>
@@ -318,8 +319,8 @@ export default function MenuPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredItems.map((item) => (
             <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
-              <div className="relative">
-                <img src={item.image || "/placeholder.svg"} alt={item.name} className="w-full h-48 object-cover" />
+              <div className="relative h-48">
+                <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
                 {!item.available && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <Badge variant="secondary" className="bg-red-500 text-white">
