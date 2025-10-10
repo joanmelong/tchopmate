@@ -1,0 +1,10 @@
+@startuml "Inscription"
+
+actor Client
+participant "Système" as System
+participant "Base de Données" as DB
+Client -> System: S'incrire
+System --> System: vérifier information
+System --> DB : Créer un nouveau client
+System --> Client: Connexion 
+@enduml

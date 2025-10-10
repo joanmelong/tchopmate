@@ -1,0 +1,10 @@
+@startuml "Connexion"
+
+actor Utilisateur
+participant "Système" as System
+participant "Base de Données" as DB
+Utilisateur -> System: Se connecter
+System -> DB: Vérifier identifiants
+DB --> System: Identifiants valides
+System --> Utilisateur: Connexion réussie
+@enduml

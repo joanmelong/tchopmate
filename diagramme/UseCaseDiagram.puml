@@ -1,0 +1,89 @@
+@startuml "Use Case - Réorganisé"
+skinparam packageStyle rectangle
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #E0F7FA
+  BorderColor #00796B
+  ArrowColor #004D40
+}
+
+actor "Compte" as Compte
+actor "Étudiant" as Etudiant
+actor "Administrateur" as Admin
+actor "Gérant" as Gerant
+
+rectangle "Application web de commande en ligne CHOPMATE" {
+  
+  rectangle "Authentification" {
+    (Créer un compte) as UC_CreerCompte
+    (Se connecter) as UC_Connexion
+    (Réinitialiser mot de passe) as UC_ResetPwd
+  }
+  
+  rectangle "Commandes" as Commandes {
+    (Passer une commande) as UC_Commande
+    (Recevoir QR code) as UC_QR
+    (Retirer un plat via QR) as UC_Scan
+  }
+
+  rectangle "Back-office" as BackOffice {
+    (Gérer le menu) as UC_GererMenu
+    (Suivre les commandes) as UC_SuiviCmd
+    (Mettre à jour statut commande) as UC_UpdateCmd
+   
+
+  }
+
+  rectangle "menu/plat" as Menu{
+    (Consulter le menu et les plats) as UC_Menu
+  }
+
+  rectangle "Systeme" as syst {
+      (Envoyer notifications) as UC_Notification
+      (Envoyer mail) as UC_mail
+  }
+}
+
+' Généralisation des acteurs : compte parent
+Compte <|-- Etudiant
+Compte <|-- Admin
+Compte <|-- Gerant
+
+' Relations Etudiant (fonctionnalités non-authentification)
+Etudiant --> UC_Menu
+Etudiant --> UC_QR
+Etudiant --> UC_Commande
+Etudiant --> UC_Scan
+
+' Relations Admin
+Gerant --> UC_UpdateCmd
+Admin --> UC_GererMenu
+
+' Relations Gérant Cantine (fonctionnalités non-authentification)
+
+Gerant --> UC_SuiviCmd
+
+
+' Compte -> use cases d'authentification (hérités par les enfants)
+
+Compte --> Authentification
+
+' les relations d'inclusion
+
+UC_QR -left-> UC_Commande : <<extends>>
+UC_Connexion .> UC_CreerCompte : <<include>>
+UC_ResetPwd .> UC_CreerCompte : <<extends>>
+UC_Scan .> UC_QR : <<extends>>
+UC_Commande.> UC_UpdateCmd : <<extends>>
+
+' package-level includes vers l'authentification
+Commandes -right-> UC_Connexion : <<include>>
+BackOffice -up-> UC_Connexion : <<include>>
+Commandes -right-> syst: <<include>>
+
+BackOffice -down-> syst : <<include>>
+
+
+@enduml

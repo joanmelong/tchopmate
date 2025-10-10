@@ -1,0 +1,13 @@
+@startuml "Créer un restaurant"
+actor Administrateur
+participant "Système" as System
+participant "Base de Données" as DB
+Administrateur -> System: Se connecter
+System -> DB: Vérifier identifiants
+DB --> System: Identifiants valides
+System --> Administrateur: Connexion réussie
+Administrateur -> System: Créer un restaurant 
+System -> DB: Enregistrer Restaurant
+DB --> System: Succès
+System --> Administrateur: Confirmation
+@enduml

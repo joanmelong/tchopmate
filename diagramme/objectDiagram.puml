@@ -1,0 +1,59 @@
+@startuml "Object Diagram"
+skinparam class {
+  BackgroundColor #FFF3E0
+  BorderColor #FB8C00
+  ArrowColor #E65100
+}
+ 
+
+
+client1 : Client
+client1 : nom = "Jean Dupont"
+client1 : idCpt = 101
+client1 : login = "jdupont"
+client1 : password = "****"
+client1 : typeCpt = "Client"
+
+
+
+resto1 : Restaurant
+resto1 : idRestaurant = "RU1"
+resto1 : nom = "RU-Campus"
+resto1 : localisation = "Campus A"
+
+menu1 : Menu
+menu1 : idMenu = "M01"
+menu1 : nom = "Menu du jour"
+menu1 : description = "Plats disponibles aujourd'hui"
+
+plat1 : Plat
+plat1 : idPlat = "P01"
+plat1 : nom = "Poulet DG"
+plat1 : description = "Poulet avec plantains frits"
+plat1 : prix = 2500
+plat1 : disponibilite = true
+
+commande1 : Commande
+commande1 : idCommande = "C001"
+commande1 : dateCommande = "03/10/2025"
+commande1 : statutCommande = "EN_ATTENTE"
+commande1 : montantTotal = 2500
+
+paiement1 : Paiement
+paiement1 : idPaiement = "P001"
+paiement1 : datePaiement = "03/10/2025"
+paiement1 : montant = 2500
+paiement1 : methodePaiement = "MobileMoney"
+
+methode1 : MethodePaiement
+methode1 : MobileMoney = "MTN Mobile Money"
+
+' Relations
+client1 -- commande1
+resto1 -- menu1
+menu1 -- plat1
+client1 -- menu1
+commande1 -- plat1
+commande1 -- paiement1
+paiement1 -- methode1
+@enduml
