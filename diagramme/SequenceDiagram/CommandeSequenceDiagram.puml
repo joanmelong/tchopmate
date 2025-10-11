@@ -1,0 +1,23 @@
+@startuml "Passer une commande"
+
+actor Client
+participant "Système" as System
+participant "Base de Données" as DB
+Client -> System: Se connecter
+System -> DB: Vérifier identifiants
+DB --> System: Identifiants valides
+System --> Client: Connexion réussie
+Client -> System: Commander
+System --> DB : récupérer liste de plats
+DB --> System : renvoyer liste de plats
+Client -> System : Choix des plats
+System --> DB : 
+DB --> System : 
+System --> Client :
+Client -> System : Confirmer commande
+System --> DB : Créer une commande en BD
+DB --> System : Création validé
+System --> Client : Confirmation
+
+
+@enduml
