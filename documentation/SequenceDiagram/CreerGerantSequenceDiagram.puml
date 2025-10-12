@@ -1,0 +1,18 @@
+@startuml "Créer un gérant pour un restaurant"
+actor Administrateur
+participant "Système" as System
+participant "Base de Données" as DB
+Administrateur -> System: Se connecter
+System -> DB: Vérifier identifiants
+DB --> System: Identifiants valides
+System --> Administrateur: Connexion réussie
+Administrateur -> System: Choisir un restaurant 
+System -> DB: Récupérer Restaurant
+DB --> System: Restiter restaurant
+System --> Administrateur: Confirmation de restau choisi
+Administrateur -> System: créer gérant
+System -> System: Vérifier info formulaire
+System -> DB: Enregistrer gérant
+DB --> System: Confirmation de création
+System --> Administrateur: Confirmation de création
+@enduml
