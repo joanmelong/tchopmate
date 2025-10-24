@@ -4,35 +4,37 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/logo"
-import { Bell, Clock, MapPin, Star, Calendar, Settings, LogOut } from "lucide-react"
+import { Bell, Clock, MapPin, Star, Calendar, Menu } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { GoogleLogin } from "@/components/auth/GoogleLogin"
 import { Footer } from "@/components/ui/footer"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 export default function HomePage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(null)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    // Récupérer l'utilisateur actuel
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      setUser(user)
+    }
 
-    getUser();
+    getUser()
 
-    // Écouter les changements d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null)
+    })
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => subscription.unsubscribe()
+  }, [])
 
   return (
     <div className="min-h-screen bg-yellow-600 bg-gradient-to-b from-background">
@@ -47,7 +49,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-4">
               <Button variant="ghost" size="sm" className="relative">
                 <Bell className="h-5 w-5" />
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-orange-500 text-white text-xs">
@@ -62,26 +64,60 @@ export default function HomePage() {
                       {user.user_metadata?.full_name?.charAt(0) || user.email?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="hidden md:block">
+                  <div>
                     <p className="text-sm font-medium text-gray-900">
                       {user.user_metadata?.full_name || "Utilisateur"}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      {user.user_metadata?.school || "Université de Yaoundé"}
-                    </p>
+                    <p className="text-xs text-gray-500">{user.user_metadata?.school || "Université de Yaoundé"}</p>
                   </div>
                 </div>
               ) : (
                 <GoogleLogin />
               )}
+            </div>
 
-              <Button variant="ghost" size="sm">
-                <Settings className="h-5 w-5" />
-              </Button>
-
-              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                <LogOut className="h-5 w-5" />
-              </Button>
+            <div className="md:hidden">
+              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[300px]">
+                  <SheetHeader>
+                    <SheetTitle>Menu</SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col space-y-4 mt-6">
+                    {user ? (
+                      <div className="flex items-center space-x-3 pb-4 border-b">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={user.user_metadata?.avatar_url || "/student-avatar.png"} />
+                          <AvatarFallback className="bg-orange-100 text-orange-600">
+                            {user.user_metadata?.full_name?.charAt(0) || user.email?.charAt(0) || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {user.user_metadata?.full_name || "Utilisateur"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {user.user_metadata?.school || "Université de Yaoundé"}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <GoogleLogin />
+                    )}
+                    <Button variant="ghost" className="justify-start relative">
+                      <Bell className="h-5 w-5 mr-2" />
+                      Notifications
+                      <Badge className="ml-auto h-5 w-5 rounded-full p-0 flex items-center justify-center bg-orange-500 text-white text-xs">
+                        3
+                      </Badge>
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>
@@ -130,7 +166,7 @@ export default function HomePage() {
             </CardHeader>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push("/commandes")}>
             <CardHeader className="text-center">
               <div className="mx-auto w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-2">
                 <Clock className="h-6 w-6 text-orange-600" />
@@ -140,7 +176,7 @@ export default function HomePage() {
             </CardHeader>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push("/favoris")}>
             <CardHeader className="text-center">
               <div className="mx-auto w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-2">
                 <Star className="h-6 w-6 text-orange-600" />
