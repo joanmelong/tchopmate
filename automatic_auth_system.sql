@@ -130,37 +130,49 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
-DECLARE
-  v_role VARCHAR(20);
 BEGIN
-  -- Déterminer le rôle selon l'email
+  -- Cas 1: L'admin se connecte -> garantir/mettre 
+  -- à jour son compte avec rôle Administrateur
   IF NEW.email = 'joantsayem@gmail.com' THEN
-    v_role := 'Administrateur';
-  ELSE
-    -- Pour les autres utilisateurs, vérifier s'ils sont des gérants autorisés
-    -- ou les traiter comme des clients par défaut
-    v_role := 'Client'; -- Rôle par défaut
+    INSERT INTO public.compte (
+      user_id,
+      nom,
+      prenom,
+      email,
+      role,
+      created_at,
+      updated_at
+    ) VALUES (
+      NEW.id,
+      COALESCE(NEW.raw_user_meta_data->>'full_name', 'Administrateur'),
+      'Admin',
+      NEW.email,
+      'Administrateur',
+      NOW(),
+      NOW()
+    )
+    ON CONFLICT (email) DO UPDATE
+    SET
+      user_id = EXCLUDED.user_id,
+      nom = COALESCE(public.compte.nom, EXCLUDED.nom),
+      prenom = COALESCE(public.compte.prenom, EXCLUDED.prenom),
+      -- NE PAS modifier role si d9j0 pr9sent
+      updated_at = NOW();
+
+    RETURN NEW;
   END IF;
 
-  -- Créer le compte dans public.compte
-  INSERT INTO public.compte (
-    user_id,
-    nom,
-    prenom,
-    email,
-    role,
-    created_at,
-    updated_at
-  ) VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', 'Utilisateur'),
-    'Nouveau',
-    NEW.email,
-    v_role,
-    NOW(),
-    NOW()
-  );
+  -- Cas 2: Tout autre utilisateur
+  -- Ne pas cr9er de nouveau compte automatiquement.
+  -- Si un compte pr9-autoris9 (public.compte) existe avec le mame email
+  -- et user_id NULL, alors lier (remplir user_id). Sinon, noop.
+  UPDATE public.compte
+  SET user_id = NEW.id,
+      updated_at = NOW()
+  WHERE email = NEW.email
+    AND (user_id IS NULL OR user_id = NEW.id);
 
+  -- Toujours retourner NEW pour ne pas bloquer la cr9ation de l'utilisateur Auth
   RETURN NEW;
 END;
 $$;

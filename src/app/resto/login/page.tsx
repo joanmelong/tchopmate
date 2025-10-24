@@ -61,37 +61,13 @@ export default function RestoLoginPage() {
     }
   };
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    if (!email.trim()) newErrors.email = "L'adresse email est requise";
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Format d'email invalide";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleGoogleLogin = async () => {
-    if (!validateForm()) return;
-
     setIsLoading(true);
     setErrors({});
     
     try {
-      // Vérifier que l'email existe dans la base de données comme gérant
-      const { data: gerantData, error: gerantError } = await supabase
-        .from("compte")
-        .select("id, email, role")
-        .eq("email", email.trim())
-        .eq("role", "Gerant")
-        .single();
-
-      if (gerantError || !gerantData) {
-        setErrors({ general: "Cette adresse email n'est pas autorisée pour les gérants" });
-        setIsLoading(false);
-        return;
-      }
-
       // Lancer l'authentification Google
-      const { data, error: authError } = await supabase.auth.signInWithOAuth({
+      const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/resto/login/callback`,
@@ -211,7 +187,7 @@ export default function RestoLoginPage() {
               </div>
 
               <div className="mt-6 text-center text-sm">
-                <span className="text-muted-foreground">Retour à l'accueil </span>
+                <span className="text-muted-foreground">Retour à l&apos;</span>
                 <Link href="/" className="text-primary hover:underline font-medium">
                   Accueil
                 </Link>

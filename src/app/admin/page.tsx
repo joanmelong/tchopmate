@@ -167,34 +167,26 @@ export default function AdminDashboard() {
     setSuccess("");
 
     try {
-      // Vérifier si l'email existe déjà
-      const { data: existingGerant } = await supabase
-        .from("compte")
-        .select("id")
-        .eq("email", newGerantEmail.trim())
-        .single();
+      // Appeler l'API serveur (utilise la clé service role) pour créer le gérant
+      const res = await fetch("/api/admin/gerants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newGerantEmail.trim() }),
+      });
 
-      if (existingGerant) {
-        setError("Un compte avec cette adresse email existe déjà");
-        setIsCreating(false);
-        return;
-      }
-
-      // Créer le compte gérant (sans user_id pour le moment)
-      const { error: insertError } = await supabase
-        .from("compte")
-        .insert({
-          nom: "Gérant",
-          prenom: "Nouveau",
-          email: newGerantEmail.trim(),
-          role: "Gerant",
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error("Erreur création gérant:", insertError);
-        setError("Erreur lors de la création du gérant");
+      if (!res.ok) {
+  const payload = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        console.error("Erreur création gérant (API):", res.status, payload);
+        if (res.status === 409) {
+          setError("Un compte avec cette adresse email existe déjà");
+        } else if (res.status === 400) {
+          const errVal = (payload as Record<string, unknown>)["error"];
+          setError(typeof errVal === "string" ? errVal : "Email invalide");
+        } else if (res.status === 500) {
+          setError("Configuration serveur incomplète pour la création (clé service role manquante)");
+        } else {
+          setError("Erreur lors de la création du gérant");
+        }
         setIsCreating(false);
         return;
       }
