@@ -345,7 +345,7 @@ export default function RestaurantDashboard() {
                     Tableau de bord
                   </h1>
                   <p className="text-sm text-gray-500">
-                    Vue d'ensemble de votre restaurant
+                    Vue d&apos;ensemble de votre restaurant
                   </p>
                 </div>
               </div>
@@ -356,7 +356,7 @@ export default function RestaurantDashboard() {
                 </Button>
                 <div className="hidden sm:block text-right">
                   <p className="text-sm font-medium text-gray-900">
-                    Aujourd'hui
+                    Aujourd&apos;hui
                   </p>
                   <p className="text-xs text-gray-500">
                     {new Date().toLocaleDateString("fr-FR", {

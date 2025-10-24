@@ -23,7 +23,7 @@ export default function WelcomePage() {
               Commandez vos plats préférés à distance
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground text-balance max-w-3xl mx-auto mb-12 leading-relaxed">
-              TchopMate révolutionne la restauration universitaire. Commandez en ligne, évitez les files d'attente et
+              TchopMate révolutionne la restauration universitaire. Commandez en ligne, évitez les files d&apos;attente et
               savourez vos repas.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -122,7 +122,7 @@ export default function WelcomePage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base leading-relaxed">
-                  Passez votre commande en quelques clics et payez directement depuis l'application
+                  Passez votre commande en quelques clics et payez directement depuis l&apos;application
                 </CardDescription>
               </CardContent>
             </Card>
@@ -158,7 +158,7 @@ export default function WelcomePage() {
                     Gagnez du temps, profitez de vos pauses
                   </h2>
                   <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-                    Plus besoin de faire la queue pendant des heures. Commandez à l'avance et récupérez votre repas
+                    Plus besoin de faire la queue pendant des heures. Commandez à l&apos;avance et récupérez votre repas
                     quand vous le souhaitez.
                   </p>
                   <div className="space-y-6">
@@ -241,7 +241,7 @@ export default function WelcomePage() {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-6xl font-bold text-balance mb-6 leading-tight">Prêt à commander ?</h2>
             <p className="text-xl text-muted-foreground text-balance mb-12 leading-relaxed">
-              Rejoignez des milliers d'étudiants qui utilisent déjà TchopMate pour leurs repas quotidiens
+              Rejoignez des milliers d&apos;étudiants qui utilisent déjà TchopMate pour leurs repas quotidiens
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/register" className="w-full sm:w-auto">
