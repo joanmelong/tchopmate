@@ -72,7 +72,7 @@ export function Navbar() {
           }`}
         >
           <div className="flex flex-col gap-3 py-4 bg-card/50 backdrop-blur-sm rounded-lg px-4">
-            <Link href="/menu" onClick={() => setIsMobileMenuOpen(false)}>
+            <Link href="/home" onClick={() => setIsMobileMenuOpen(false)}>
               <Button variant="ghost" className="w-full text-foreground hover:bg-primary/10 justify-start">
                 Menu
               </Button>
