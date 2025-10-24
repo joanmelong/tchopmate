@@ -98,7 +98,7 @@ export default function GestionClients() {
   ]
 
   const navigationLinks = [
-    { href: "/resto/admin", label: "Tableau de bord", icon: LayoutDashboard },
+    { href: "/resto/{id}", label: "Tableau de bord", icon: LayoutDashboard },
     { href: "/resto/admin/plats", label: "Gestion des plats", icon: UtensilsCrossed },
     { href: "/resto/admin/commandes", label: "Gestion des commandes", icon: ShoppingBag },
     { href: "/resto/admin/clients", label: "Gestion des clients", icon: Users },

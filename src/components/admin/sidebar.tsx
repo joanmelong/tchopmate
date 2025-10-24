@@ -14,11 +14,11 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
   const pathname = usePathname()
 
   const menuItems = [
-    { href: "/admin", label: "Tableau de bord", icon: LayoutDashboard },
-    { href: "/admin/dishes", label: "Gestion des plats", icon: UtensilsCrossed },
-    { href: "/admin/menus", label: "Gestion des menus", icon: BookOpen },
-    { href: "/admin/orders", label: "Commandes", icon: ShoppingCart },
-    { href: "/admin/analytics", label: "Statistiques", icon: BarChart3 },
+    { href: "/resto/id", label: "Tableau de bord", icon: LayoutDashboard },
+    { href: "/resto/id/dishes", label: "Gestion des plats", icon: UtensilsCrossed },
+    { href: "/resto/id/menus", label: "Gestion des menus", icon: BookOpen },
+    { href: "/resto/id/orders", label: "Commandes", icon: ShoppingCart },
+    { href: "/resto/id/analytics", label: "Statistiques", icon: BarChart3 },
   ]
 
   return (

@@ -10,11 +10,11 @@ import { LayoutDashboard, UtensilsCrossed, ShoppingBag, Users, BarChart3, Bell, 
 import { cn } from "@/lib/utils"
 
 const navigationLinks = [
-  { href: "/resto/admin", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/resto/admin/plats", label: "Gestion des plats", icon: UtensilsCrossed },
-  { href: "/resto/admin/commandes", label: "Gestion des commandes", icon: ShoppingBag },
-  { href: "/resto/admin/clients", label: "Gestion des clients", icon: Users },
-  { href: "/resto/admin/statistiques", label: "Statistiques", icon: BarChart3 },
+  { href: "/resto/id", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/resto/id/plats", label: "Gestion des plats", icon: UtensilsCrossed },
+  { href: "/resto/id/commandes", label: "Gestion des commandes", icon: ShoppingBag },
+  { href: "/resto/id/clients", label: "Gestion des clients", icon: Users },
+  { href: "/resto/id/statistiques", label: "Statistiques", icon: BarChart3 },
 ]
 
 export function AdminSidebar() {
@@ -25,7 +25,7 @@ export function AdminSidebar() {
     <div className="flex h-full flex-col bg-gradient-to-b from-orange-500 via-orange-600 to-amber-600">
       {/* Logo */}
       <div className="border-b border-orange-400/30 p-6">
-        <Link href="/resto/admin" className="flex items-center gap-3">
+        <Link href="/resto/id" className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-lg">
             <UtensilsCrossed className="h-7 w-7 text-orange-600" />
           </div>
