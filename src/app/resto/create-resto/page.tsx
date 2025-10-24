@@ -247,7 +247,7 @@ export default function CreateRestoPage() {
                         <p className="mb-2 text-sm text-muted-foreground">
                           <span className="font-semibold">Cliquez pour uploader</span> ou glissez-déposez
                         </p>
-                        <p className="text-xs text-muted-foreground">PNG, JPG jusqu'à 5MB</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG jusqu&apos;à 5MB</p>
                       </div>
                     )}
                     <input

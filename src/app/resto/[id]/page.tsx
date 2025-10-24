@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,10 +28,124 @@ import {
   ChevronRight,
   Menu,
 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+
+interface GerantInfo {
+  id: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  numero_tel?: string;
+}
+
+interface RestaurantInfo {
+  id_restaurant: string;
+  nom: string;
+  localisation?: string;
+  photo?: string;
+}
 
 export default function RestaurantDashboard() {
   const router = useRouter();
+  const params = useParams();
+  const gerantId = params.id as string;
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [gerantInfo, setGerantInfo] = useState<GerantInfo | null>(null);
+  const [restaurantInfo, setRestaurantInfo] = useState<RestaurantInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Vérifier l'authentification et charger les données
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Vérifier la session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          router.push("/resto/login");
+          return;
+        }
+
+        // Vérifier que l'utilisateur est bien le gérant de ce restaurant
+        const { data: compteData, error: compteError } = await supabase
+          .from("compte")
+          .select("id, nom, prenom, email, numero_tel, role")
+          .eq("user_id", session.user.id)
+          .eq("role", "Gerant")
+          .single();
+
+        if (compteError || !compteData) {
+          router.push("/resto/login");
+          return;
+        }
+
+        // Vérifier que l'ID correspond
+        if (compteData.id.toString() !== gerantId) {
+          router.push("/resto/login");
+          return;
+        }
+
+        setGerantInfo(compteData);
+
+        // Charger les informations du restaurant
+        const { data: restaurantData, error: restaurantError } = await supabase
+          .from("restaurant")
+          .select("id_restaurant, nom, localisation, photo")
+          .eq("gerant_id", compteData.id)
+          .single();
+
+        if (restaurantError) {
+          console.error("Erreur chargement restaurant:", restaurantError);
+          setError("Erreur lors du chargement des informations du restaurant");
+          return;
+        }
+
+        setRestaurantInfo(restaurantData);
+      } catch (error) {
+        console.error("Erreur inattendue:", error);
+        setError("Une erreur inattendue s'est produite");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [router, gerantId]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/resto/login");
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Chargement du tableau de bord...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-white">
+        <div className="text-center">
+          <div className="bg-red-100 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <LogOut className="h-8 w-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Erreur</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={() => router.push("/resto/login")}>
+            Retour à la connexion
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const stats = [
     {
@@ -143,18 +257,18 @@ export default function RestaurantDashboard() {
             <CardContent className="p-3">
               <div className="flex items-center space-x-3">
                 <Image
-                  src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100&h=100&fit=crop"
-                  alt="Restaurant"
+                  src={restaurantInfo?.photo || "/placeholder-logo.png"}
+                  alt={restaurantInfo?.nom || "Restaurant"}
                   width={48}
                   height={48}
                   className="w-12 h-12 rounded-lg object-cover"
                 />
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 truncate">
-                    Le Saint Jean
+                    {restaurantInfo?.nom || "Restaurant"}
                   </h3>
                   <p className="text-xs text-gray-600 truncate">
-                    Yaoundé - Mvog-Ada
+                    {restaurantInfo?.localisation || "Localisation"}
                   </p>
                 </div>
               </div>
@@ -190,12 +304,12 @@ export default function RestaurantDashboard() {
           <div className="flex items-center space-x-3">
             <Avatar>
               <AvatarFallback className="bg-orange-500 text-white">
-                JD
+                {gerantInfo ? `${gerantInfo.prenom[0]}${gerantInfo.nom[0]}` : "G"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-gray-900 text-sm truncate">
-                Jean Dupont
+                {gerantInfo ? `${gerantInfo.prenom} ${gerantInfo.nom}` : "Gérant"}
               </p>
               <p className="text-xs text-gray-500">Gérant</p>
             </div>
@@ -203,6 +317,7 @@ export default function RestaurantDashboard() {
               variant="ghost"
               size="icon"
               className="hover:bg-red-50 hover:text-red-600"
+              onClick={handleLogout}
             >
               <LogOut className="h-5 w-5" />
             </Button>
@@ -230,7 +345,7 @@ export default function RestaurantDashboard() {
                     Tableau de bord
                   </h1>
                   <p className="text-sm text-gray-500">
-                    Vue d'ensemble de votre restaurant
+                    Vue d&apos;ensemble de votre restaurant
                   </p>
                 </div>
               </div>
@@ -241,7 +356,7 @@ export default function RestaurantDashboard() {
                 </Button>
                 <div className="hidden sm:block text-right">
                   <p className="text-sm font-medium text-gray-900">
-                    Aujourd'hui
+                    Aujourd&apos;hui
                   </p>
                   <p className="text-xs text-gray-500">
                     {new Date().toLocaleDateString("fr-FR", {
@@ -330,7 +445,7 @@ export default function RestaurantDashboard() {
                   <div className="space-y-2 text-sm text-gray-600">
                     <div className="flex items-center space-x-2">
                       <MapPin className="h-4 w-4" />
-                      <span>Yaoundé - Mvog-Ada</span>
+                      <span>{restaurantInfo?.localisation || "Localisation non définie"}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4" />
@@ -338,7 +453,7 @@ export default function RestaurantDashboard() {
                     </div>
                     <div className="flex items-center space-x-2">
                       <Phone className="h-4 w-4" />
-                      <span>+237 6 XX XX XX XX</span>
+                      <span>{gerantInfo?.numero_tel || "Téléphone non défini"}</span>
                     </div>
                   </div>
                 </div>
