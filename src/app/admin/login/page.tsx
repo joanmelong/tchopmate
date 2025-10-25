@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
           setError('Session non trouvée. Veuillez vous reconnecter.');
           break;
         case 'unauthorized':
-          setError('Accès non autorisé. Seule l\'adresse joantsayem@gmail.com peut accéder à cette interface.');
+          setError('Accès non autorisé. Seule l\'adresse administrateur peut accéder à cette interface.');
           break;
         case 'db_error':
           setError('Erreur de base de données. Veuillez contacter l\'administrateur.');
@@ -144,7 +144,7 @@ export default function AdminLoginPage() {
                     </span>
                   </div>
                   <p className="text-sm text-blue-700">
-                    Seule l'adresse <strong>joantsayem@gmail.com</strong> peut accéder à cette interface.
+                    Seule une adresse <strong>administrateur</strong> peut accéder à cette interface.
                   </p>
                 </div>
 
@@ -182,7 +182,7 @@ export default function AdminLoginPage() {
               </div>
 
               <div className="mt-6 text-center text-sm">
-                <span className="text-muted-foreground">Retour à l'accueil </span>
+                <span className="text-muted-foreground">Retour à l&apos;</span>
                 <Link href="/" className="text-primary hover:underline font-medium">
                   Accueil
                 </Link>
@@ -201,7 +201,7 @@ export default function AdminLoginPage() {
               Administration TCHOPMATE
             </h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Gérez les gérants de restaurants et supervisez l'ensemble de la plateforme. 
+              Gérez les gérants de restaurants et supervisez l&apos;ensemble de la plateforme. 
               Interface sécurisée pour les administrateurs.
             </p>
           </div>
