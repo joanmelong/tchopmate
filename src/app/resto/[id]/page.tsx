@@ -2,36 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Logo } from "@/components/logo";
-
-import {
-  Bell,
-  Home,
-  ShoppingCart,
-  BookOpen,
-  Users,
-  BarChart3,
-  Settings,
-  LogOut,
-  DollarSign,
-  Star,
-  Clock,
-  MapPin,
-  Phone,
-  Plus,
-  FileText,
-  ChevronRight,
-  Menu,
-} from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { DashboardStats } from "@/components/admin/dashboard-stats";
 import { DailySalesChart } from "@/components/admin/daily-sales-chart";
 import { PopularDishes } from "@/components/admin/popular-dishes";
+import { LogOut } from "lucide-react";
+import { Button } from "react-day-picker";
 
 interface GerantInfo {
   id: number;
@@ -54,8 +30,8 @@ export default function AdminDashboard() {
   const gerantId = params.id as string;
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [gerantInfo, setGerantInfo] = useState<GerantInfo | null>(null);
-  const [restaurantInfo, setRestaurantInfo] = useState<RestaurantInfo | null>(null);
+  const [setGerantInfo] = useState<GerantInfo | null>(null);
+  const [setRestaurantInfo] = useState<RestaurantInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -90,7 +66,7 @@ export default function AdminDashboard() {
           return;
         }
 
-        setGerantInfo(compteData);
+        // setGerantInfo(compteData);
 
         // Charger les informations du restaurant
         const { data: restaurantData, error: restaurantError } = await supabase
@@ -105,7 +81,7 @@ export default function AdminDashboard() {
           return;
         }
 
-        setRestaurantInfo(restaurantData);
+        // setRestaurantInfo(restaurantData);
       } catch (error) {
         console.error("Erreur inattendue:", error);
         setError("Une erreur inattendue s'est produite");
@@ -115,7 +91,7 @@ export default function AdminDashboard() {
     };
 
     loadData();
-  }, [router, gerantId]);
+  }, [router, gerantId, setGerantInfo, setRestaurantInfo]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
