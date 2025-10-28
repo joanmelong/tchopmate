@@ -78,7 +78,7 @@ export function ImageUploadField({ label, value, onChange, preview, onPreviewCha
           {preview ? (
             <div className="space-y-2">
               <img src={preview || "/placeholder.svg"} alt="Preview" className="w-full h-32 object-cover rounded" />
-              <p className="text-sm text-gray-600">Cliquez pour changer l'image</p>
+              <p className="text-sm text-gray-600">Cliquez pour changer l&apos;image</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -100,7 +100,7 @@ export function ImageUploadField({ label, value, onChange, preview, onPreviewCha
           className="text-red-600 hover:text-red-700 hover:bg-red-50"
         >
           <X className="w-4 h-4 mr-1" />
-          Supprimer l'image
+          Supprimer l&apos;image
         </Button>
       )}
     </div>

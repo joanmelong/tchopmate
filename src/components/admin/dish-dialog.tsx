@@ -105,7 +105,7 @@ export function DishDialog({ open, onOpenChange, dish, onSave }: DishDialogProps
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="waitTime">Temps d'attente (min) *</Label>
+              <Label htmlFor="waitTime">Temps d&apos;attente (min) *</Label>
               <Input
                 id="waitTime"
                 type="number"

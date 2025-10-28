@@ -13,10 +13,9 @@ export async function middleware(request: NextRequest) {
 
     // Pour les routes admin, vérifier la présence d'un cookie de session
     // Si pas de cookie, rediriger vers login
-  const hasSessionCookie = request.cookies.has('sb-access-token') || 
-               request.cookies.has('sb-refresh-token') ||
-               request.cookies.has('supabase-auth-token') ||
-               request.cookies.has('sb-admin-session');
+    const hasSessionCookie = request.cookies.has('sb-access-token') || 
+                             request.cookies.has('sb-refresh-token') ||
+                             request.cookies.has('supabase-auth-token');
 
     if (!hasSessionCookie) {
       console.log('Aucun cookie de session trouvé, redirection vers login');
