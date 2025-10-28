@@ -1,102 +1,60 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { useParams } from "next/navigation";
+import { useProtectedRoute } from "@/hooks/use-protected-route";
+import { useRestaurantByGerant } from "@/hooks/use-restaurant";
+import { UserRole } from "@/core/entities/User";
 import { DashboardStats } from "@/components/admin/dashboard-stats";
 import { DailySalesChart } from "@/components/admin/daily-sales-chart";
 import { PopularDishes } from "@/components/admin/popular-dishes";
 import { LogOut } from "lucide-react";
-import { Button } from "react-day-picker";
+import { Button } from "@/components/ui/button";
+import { error } from "console";
+import router from "next/router";
 
-interface GerantInfo {
-  id: number;
-  nom: string;
-  prenom: string;
-  email: string;
-  numero_tel?: string;
-}
-
-interface RestaurantInfo {
-  id_restaurant: string;
-  nom: string;
-  localisation?: string;
-  photo?: string;
-}
-
+/**
+ * Page du tableau de bord gérant - REFACTORISÉE avec Clean Architecture
+ * 
+ * AVANT : Appels directs à Supabase dans le composant ❌
+ * APRÈS : Utilisation des hooks qui utilisent les use cases ✅
+ * 
+ * Avantages :
+ * - Logique métier testable sans React
+ * - Pas de dépendance directe à Supabase
+ * - Peut changer de base de données facilement
+ * - Code réutilisable
+ */
 export default function AdminDashboard() {
-  const router = useRouter();
   const params = useParams();
   const gerantId = params.id as string;
-  
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [setGerantInfo] = useState<GerantInfo | null>(null);
-  const [setRestaurantInfo] = useState<RestaurantInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  // Vérifier l'authentification et charger les données
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Vérifier la session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session?.user) {
-          router.push("/resto/login");
-          return;
-        }
+  // Hook de protection de route avec vérification du rôle
+  const { user, isLoading: authLoading, isAuthorized } = useProtectedRoute({
+    requiredRole: UserRole.STAFF,
+    redirectTo: "/resto/login",
+  });
 
-        // Vérifier que l'utilisateur est bien le gérant de ce restaurant
-        const { data: compteData, error: compteError } = await supabase
-          .from("compte")
-          .select("id, nom, prenom, email, numero_tel, role")
-          .eq("user_id", session.user.id)
-          .eq("role", "Gerant")
-          .single();
+  // Hook pour récupérer le restaurant du gérant
+  const { restaurant, isLoading: restaurantLoading, error } = useRestaurantByGerant(user);
 
-        if (compteError || !compteData) {
-          router.push("/resto/login");
-          return;
-        }
+  const isLoading = authLoading || restaurantLoading;
 
-        // Vérifier que l'ID correspond
-        if (compteData.id.toString() !== gerantId) {
-          router.push("/resto/login");
-          return;
-        }
-
-        // setGerantInfo(compteData);
-
-        // Charger les informations du restaurant
-        const { data: restaurantData, error: restaurantError } = await supabase
-          .from("restaurant")
-          .select("id_restaurant, nom, localisation, photo")
-          .eq("gerant_id", compteData.id)
-          .single();
-
-        if (restaurantError) {
-          console.error("Erreur chargement restaurant:", restaurantError);
-          setError("Erreur lors du chargement des informations du restaurant");
-          return;
-        }
-
-        // setRestaurantInfo(restaurantData);
-      } catch (error) {
-        console.error("Erreur inattendue:", error);
-        setError("Une erreur inattendue s'est produite");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, [router, gerantId, setGerantInfo, setRestaurantInfo]);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/resto/login");
-  };
+  // Vérifier que l'utilisateur accède bien à son propre dashboard
+  if (user && user.id.toString() !== gerantId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-white">
+        <div className="text-center">
+          <div className="bg-red-100 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <LogOut className="h-8 w-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Accès non autorisé</h2>
+          <p className="text-muted-foreground">
+            Vous n&apos;avez pas accès à ce tableau de bord
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -109,7 +67,23 @@ export default function AdminDashboard() {
     );
   }
 
-  if (error) {
+  if (error || !restaurant) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-white">
+        <div className="text-center">
+          <div className="bg-red-100 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <LogOut className="h-8 w-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Erreur</h2>
+          <p className="text-muted-foreground mb-4">
+            {error || "Aucun restaurant trouvé"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+    if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-white">
         <div className="text-center">
@@ -130,7 +104,9 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-        <p className="text-gray-600 mt-1">Bienvenue dans votre espace gérant TchopMate</p>
+        <p className="text-gray-600 mt-1">
+          Bienvenue {user?.fullName} - {restaurant.nom}
+        </p>
       </div>
 
       <DashboardStats />
@@ -143,13 +119,7 @@ export default function AdminDashboard() {
           <PopularDishes />
         </div>
       </div>
-      {/* Overlay Mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
     </div>
   );
 }
+
