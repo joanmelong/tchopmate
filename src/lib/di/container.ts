@@ -19,6 +19,8 @@ import { LoginUseCase } from '@/core/use-cases/auth/LoginUseCase';
 import { RegisterUseCase } from '@/core/use-cases/auth/RegisterUseCase';
 import { GetCurrentSessionUseCase } from '@/core/use-cases/auth/GetCurrentSessionUseCase';
 import { LogoutUseCase } from '@/core/use-cases/auth/LogoutUseCase';
+import { GoogleLoginAdminUseCase, HandleAdminCallbackUseCase } from '@/core/use-cases/auth/GoogleLoginAdminUseCase';
+import { GoogleLoginGerantUseCase, HandleGerantCallbackUseCase } from '@/core/use-cases/auth/GoogleLoginGerantUseCase';
 
 // Use Cases - Restaurant
 import { GetRestaurantUseCase } from '@/core/use-cases/restaurant/GetRestaurantUseCase';
@@ -42,6 +44,10 @@ export class DIContainer {
   private _registerUseCase?: RegisterUseCase;
   private _getCurrentSessionUseCase?: GetCurrentSessionUseCase;
   private _logoutUseCase?: LogoutUseCase;
+  private _googleLoginAdminUseCase?: GoogleLoginAdminUseCase;
+  private _handleAdminCallbackUseCase?: HandleAdminCallbackUseCase;
+  private _googleLoginGerantUseCase?: GoogleLoginGerantUseCase;
+  private _handleGerantCallbackUseCase?: HandleGerantCallbackUseCase;
 
   // Use Cases - Restaurant
   private _getRestaurantUseCase?: GetRestaurantUseCase;
@@ -117,6 +123,37 @@ export class DIContainer {
       this._logoutUseCase = new LogoutUseCase(this.authRepository);
     }
     return this._logoutUseCase;
+  }
+
+  get googleLoginAdminUseCase(): GoogleLoginAdminUseCase {
+    if (!this._googleLoginAdminUseCase) {
+      this._googleLoginAdminUseCase = new GoogleLoginAdminUseCase(this.authRepository);
+    }
+    return this._googleLoginAdminUseCase;
+  }
+
+  get handleAdminCallbackUseCase(): HandleAdminCallbackUseCase {
+    if (!this._handleAdminCallbackUseCase) {
+      this._handleAdminCallbackUseCase = new HandleAdminCallbackUseCase(this.authRepository);
+    }
+    return this._handleAdminCallbackUseCase;
+  }
+
+  get googleLoginGerantUseCase(): GoogleLoginGerantUseCase {
+    if (!this._googleLoginGerantUseCase) {
+      this._googleLoginGerantUseCase = new GoogleLoginGerantUseCase(this.authRepository);
+    }
+    return this._googleLoginGerantUseCase;
+  }
+
+  get handleGerantCallbackUseCase(): HandleGerantCallbackUseCase {
+    if (!this._handleGerantCallbackUseCase) {
+      this._handleGerantCallbackUseCase = new HandleGerantCallbackUseCase(
+        this.authRepository,
+        this.userRepository
+      );
+    }
+    return this._handleGerantCallbackUseCase;
   }
 
   // ========== USE CASES - RESTAURANT ==========
