@@ -7,7 +7,7 @@
 export enum UserRole {
   STUDENT = 'Etudiant',
   STAFF = 'Gerant',
-  ADMIN = 'Admin',
+  ADMIN = 'Administrateur', // Correspond au rôle dans la DB
 }
 
 export interface UserProps {

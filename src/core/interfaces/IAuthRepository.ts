@@ -24,6 +24,11 @@ export interface AuthSession {
   refreshToken?: string;
 }
 
+export interface GoogleLoginOptions {
+  redirectTo: string;
+  scopes?: string;
+}
+
 /**
  * Le repository ne retourne que des entités métier ou des erreurs
  * Il ne doit JAMAIS exposer des détails d'implémentation (Supabase, etc.)
@@ -58,4 +63,14 @@ export interface IAuthRepository {
    * Réinitialiser le mot de passe
    */
   resetPassword(email: string): Promise<void>;
+
+  /**
+   * Initier la connexion Google OAuth
+   */
+  initiateGoogleLogin(options: GoogleLoginOptions): Promise<string>;
+
+  /**
+   * Gérer le callback OAuth après redirection
+   */
+  handleOAuthCallback(): Promise<AuthSession | null>;
 }
