@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,27 +26,7 @@ export default function CreateRestoPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [initLoading, setInitLoading] = useState(true);
-
-  useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { router.replace("/resto/login"); return; }
-
-      const { data: compte, error: compteError } = await supabase
-        .from("compte").select("id, role").eq("user_id", session.user.id).single();
-      if (compteError || !compte || compte.role !== "Gerant") { router.replace("/resto/login"); return; }
-  // garder l'id en scope via compteData plus tard
-
-      const { data: resto } = await supabase
-        .from("restaurant").select("id_restaurant").eq("gerant_id", compte.id).maybeSingle();
-      if (resto) { router.replace(`/resto/${compte.id}`); return; }
-
-  setInitLoading(false);
-    };
-    init();
-  }, [router]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -127,7 +107,8 @@ export default function CreateRestoPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setIsSubmitting(true);
+
+    setIsLoading(true);
 
     try {
       // Récupérer l'utilisateur connecté
@@ -135,7 +116,7 @@ export default function CreateRestoPage() {
       
       if (userError || !user) {
         setErrors({ general: "Vous devez être connecté pour créer un restaurant" });
-        setIsSubmitting(false);
+        setIsLoading(false);
         return;
       }
 
@@ -149,7 +130,7 @@ export default function CreateRestoPage() {
 
       if (compteError || !compteData) {
         setErrors({ general: "Compte gérant non trouvé" });
-        setIsSubmitting(false);
+        setIsLoading(false);
         return;
       }
 
@@ -160,54 +141,41 @@ export default function CreateRestoPage() {
           imageUrl = await uploadImage(selectedImage, user.id);
         } catch (uploadError) {
           console.error("Erreur upload:", uploadError);
-          setErrors({ general: "Erreur lors de l’upload de l’image" });
-          setIsSubmitting(false);
+          setErrors({ general: "Erreur lors de l'upload de l'image" });
+          setIsLoading(false);
           return;
         }
       }
 
-      // Créer le restaurant (client d’abord)
-      const { error: clientInsertError } = await supabase
+      // Créer le restaurant
+      const { data: restaurantData, error: restaurantError } = await supabase
         .from("restaurant")
-        .insert([{ nom: formData.nom.trim(), localisation: formData.localisation.trim(), photo: imageUrl, gerant_id: compteData.id }]);
+        .insert([{
+          nom: formData.nom.trim(),
+          localisation: formData.localisation.trim(),
+          photo: imageUrl,
+          gerant_id: compteData.id,
+        }])
+        .select("id_restaurant")
+        .single();
 
-      if (clientInsertError) {
-        // Fallback API avec token
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch("/api/gerant/restaurants", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
-          body: JSON.stringify({ nom: formData.nom.trim(), localisation: formData.localisation.trim() }),
-        });
-        if (!res.ok) {
-          const payload = await res.json().catch(() => ({} as Record<string, unknown>));
-          setErrors({ general: (payload["error"] as string) || "Erreur lors de la création du restaurant" });
-          setIsSubmitting(false);
-          return;
-        }
+      if (restaurantError) {
+        console.error("Erreur création restaurant:", restaurantError);
+        setErrors({ general: "Erreur lors de la création du restaurant" });
+        setIsLoading(false);
+        return;
       }
 
-      // Redirection vers le tableau de bord (par id gérant)
-      router.push(`/resto/${compteData.id}`);
+      // Redirection vers le tableau de bord
+      router.push(`/resto/${restaurantData.id_restaurant}`);
 
     } catch (error) {
       console.error("Erreur inattendue:", error);
       setErrors({ general: "Une erreur inattendue s'est produite" });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
-
-  if (initLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Chargement…</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -359,16 +327,16 @@ export default function CreateRestoPage() {
                   variant="outline"
                   className="flex-1"
                   onClick={() => router.back()}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 >
                   Annuler
                 </Button>
                 <Button
                   type="submit"
                   className="flex-1"
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 >
-                  {isSubmitting ? "Création en cours..." : "Créer le restaurant"}
+                  {isLoading ? "Création en cours..." : "Créer le restaurant"}
                 </Button>
               </div>
             </form>
