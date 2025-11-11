@@ -9,6 +9,7 @@ import {
   AuthCredentials,
   RegisterData,
   AuthSession,
+  GoogleLoginOptions,
 } from '@/core/interfaces/IAuthRepository';
 import { User, UserRole } from '@/core/entities/User';
 import { UserMapper } from '../mappers';
@@ -125,5 +126,114 @@ export class SupabaseAuthRepository implements IAuthRepository {
     if (error) {
       throw new Error('Erreur lors de la réinitialisation du mot de passe');
     }
+  }
+
+  async initiateGoogleLogin(options: GoogleLoginOptions): Promise<string> {
+    const { data, error } = await this.supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}${options.redirectTo}`,
+        scopes: options.scopes || 'openid email profile',
+      },
+    });
+
+    if (error || !data.url) {
+      throw new Error('Erreur lors de l\'initialisation de la connexion Google');
+    }
+
+    return data.url;
+  }
+
+  async handleOAuthCallback(): Promise<AuthSession | null> {
+    // Attendre que la session soit échangée avec le code OAuth
+    // Supabase gère automatiquement l'échange du code en session
+    const { data: { session }, error } = await this.supabase.auth.getSession();
+
+    if (error) {
+      console.error('[SupabaseAuthRepository] Erreur getSession:', error);
+      return null;
+    }
+
+    if (!session?.user) {
+      console.warn('[SupabaseAuthRepository] Pas de session utilisateur');
+      return null;
+    }
+
+    console.log('[SupabaseAuthRepository] Session OAuth récupérée:', {
+      userId: session.user.id,
+      email: session.user.email,
+    });
+
+    // Récupérer ou créer le profil utilisateur
+    let { data: compteData, error: compteError } = await this.supabase
+      .from('compte')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .single<CompteDTO>();
+
+    console.log('[SupabaseAuthRepository] Recherche compte par user_id:', {
+      userId: session.user.id,
+      found: !!compteData,
+      error: compteError?.message,
+    });
+
+    // Si pas trouvé par user_id, chercher par email
+    if (!compteData) {
+      const { data: compteByEmail } = await this.supabase
+        .from('compte')
+        .select('*')
+        .eq('email', session.user.email!)
+        .single<CompteDTO>();
+
+      console.log('[SupabaseAuthRepository] Recherche compte par email:', {
+        email: session.user.email,
+        found: !!compteByEmail,
+      });
+
+      if (compteByEmail) {
+        // Mettre à jour le user_id
+        const { data: updatedCompte, error: updateError } = await this.supabase
+          .from('compte')
+          .update({ user_id: session.user.id })
+          .eq('id', compteByEmail.id)
+          .select()
+          .single<CompteDTO>();
+
+        if (!updateError && updatedCompte) {
+          console.log('[SupabaseAuthRepository] Compte mis à jour avec user_id');
+          compteData = updatedCompte;
+        }
+      }
+    }
+
+    // Si le compte n'existe toujours pas, le créer
+    if (!compteData) {
+      console.log('[SupabaseAuthRepository] Création nouveau compte');
+      const { data: newCompte, error: createError } = await this.supabase
+        .from('compte')
+        .insert({
+          user_id: session.user.id,
+          email: session.user.email!,
+          nom: session.user.user_metadata?.family_name || '',
+          prenom: session.user.user_metadata?.given_name || '',
+          role: UserRole.STUDENT,
+        })
+        .select()
+        .single<CompteDTO>();
+
+      if (createError || !newCompte) {
+        throw new Error('Erreur lors de la création du profil');
+      }
+
+      compteData = newCompte;
+    }
+
+    const user = UserMapper.toDomain(compteData);
+
+    return {
+      user,
+      accessToken: session.access_token,
+      refreshToken: session.refresh_token,
+    };
   }
 }
