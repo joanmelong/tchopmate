@@ -5,12 +5,13 @@ import { MenuDTO } from '@/core/entities/Menu';
 import { menuService } from '@/services/MenuService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, List, UtensilsCrossed } from 'lucide-react';
 import { MenuForm } from './MenuForm';
+import { MenuCompositionManager } from './MenuCompositionManager';
 import { useToast } from '@/components/ui/use-toast';
 
 interface MenuManagementProps {
-  restaurantId: number; // INTEGER dans PostgreSQL
+  restaurantId: string; // UUID du restaurant
 }
 
 export function MenuManagement({ restaurantId }: MenuManagementProps) {
@@ -18,6 +19,7 @@ export function MenuManagement({ restaurantId }: MenuManagementProps) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingMenu, setEditingMenu] = useState<MenuDTO | null>(null);
+  const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,22 +64,12 @@ export function MenuManagement({ restaurantId }: MenuManagementProps) {
     }
   };
 
-  const handleToggleAvailability = async (id: string, currentStatus: boolean) => {
-    try {
-      await menuService.toggleAvailability(id, !currentStatus);
-      toast({
-        title: 'Succès',
-        description: `Menu ${!currentStatus ? 'activé' : 'désactivé'}`,
-      });
-      await loadMenus();
-    } catch (error) {
-      console.error('Error toggling availability:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Erreur lors du changement de statut',
-        variant: 'destructive',
-      });
-    }
+  const handleViewDishes = (menuId: string) => {
+    setSelectedMenuId(menuId);
+  };
+
+  const handleAddDishes = (menuId: string) => {
+    setSelectedMenuId(menuId);
   };
 
   const handleFormSuccess = () => {
@@ -88,6 +80,20 @@ export function MenuManagement({ restaurantId }: MenuManagementProps) {
 
   if (loading) {
     return <div className="flex justify-center py-12">Chargement...</div>;
+  }
+
+  // Si un menu est sélectionné, afficher le gestionnaire de composition
+  if (selectedMenuId) {
+    return (
+      <MenuCompositionManager
+        menuId={selectedMenuId}
+        restaurantId={restaurantId}
+        onBack={() => {
+          setSelectedMenuId(null);
+          loadMenus();
+        }}
+      />
+    );
   }
 
   return (
@@ -118,14 +124,7 @@ export function MenuManagement({ restaurantId }: MenuManagementProps) {
             <CardHeader>
               <CardTitle className="flex justify-between items-start">
                 <span>{menu.nom}</span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleToggleAvailability(menu.id, menu.disponible)}
-                  >
-                    {menu.disponible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                  </Button>
+                <div className="flex gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -133,6 +132,7 @@ export function MenuManagement({ restaurantId }: MenuManagementProps) {
                       setEditingMenu(menu);
                       setShowForm(true);
                     }}
+                    title="Modifier le menu"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -140,6 +140,7 @@ export function MenuManagement({ restaurantId }: MenuManagementProps) {
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDelete(menu.id)}
+                    title="Supprimer le menu"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -156,11 +157,29 @@ export function MenuManagement({ restaurantId }: MenuManagementProps) {
               )}
               <p className="text-sm text-gray-600 mb-2">{menu.description}</p>
               {menu.prix && (
-                <p className="text-lg font-bold">{menu.prix} FCFA</p>
+                <p className="text-lg font-bold mb-3">{menu.prix} FCFA</p>
               )}
-              <p className="text-sm text-gray-500">
-                {menu.disponible ? 'Disponible' : 'Non disponible'}
-              </p>
+              
+              <div className="flex flex-col gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={() => handleViewDishes(menu.id)}
+                >
+                  <List className="mr-1 h-3 w-3" />
+                  Voir les plats
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={() => handleAddDishes(menu.id)}
+                >
+                  <UtensilsCrossed className="mr-1 h-3 w-3" />
+                  Ajouter plats
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}

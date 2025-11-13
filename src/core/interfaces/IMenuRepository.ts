@@ -103,7 +103,7 @@ import { MenuDTO, CreateMenuDTO, UpdateMenuDTO } from '../entities/Menu';
 import { DishDTO, CreateDishDTO, UpdateDishDTO } from '../entities/Dish';
 
 export interface IMenuManagementRepository {
-  getMenusByRestaurantId(restaurantId: number): Promise<MenuDTO[]>;
+  getMenusByRestaurantId(restaurantId: string): Promise<MenuDTO[]>;
   getMenuById(id: string): Promise<MenuDTO | null>;
   createMenu(data: CreateMenuDTO): Promise<MenuDTO>;
   updateMenu(id: string, data: UpdateMenuDTO): Promise<MenuDTO>;

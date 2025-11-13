@@ -17,7 +17,7 @@ export class MenuService {
   private updateMenuUseCase = new UpdateMenu(this.repository);
   private deleteMenuUseCase = new DeleteMenu(this.repository);
 
-  async getMenusByRestaurant(restaurantId: number): Promise<MenuDTO[]> {
+  async getMenusByRestaurant(restaurantId: string): Promise<MenuDTO[]> {
     return this.getMenusByRestaurantUseCase.execute(restaurantId);
   }
 

@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabaseClient';
 export class MenuManagementRepository implements IMenuManagementRepository {
   private readonly tableName = 'menu';
 
-  async getMenusByRestaurantId(restaurantId: number): Promise<MenuDTO[]> {
+  async getMenusByRestaurantId(restaurantId: string): Promise<MenuDTO[]> {
     const { data, error } = await supabase
       .from(this.tableName)
       .select('*')

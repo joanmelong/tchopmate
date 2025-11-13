@@ -8,7 +8,7 @@ import { MenuDTO } from '../../entities/Menu';
 export class GetMenusByRestaurant {
   constructor(private menuRepository: IMenuManagementRepository) {}
 
-  async execute(restaurantId: number): Promise<MenuDTO[]> {
+  async execute(restaurantId: string): Promise<MenuDTO[]> {
     if (!restaurantId) {
       throw new Error('Restaurant ID is required');
     }
