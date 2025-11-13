@@ -138,8 +138,8 @@ export function MenuForm({ restaurantId, menu, onSuccess, onCancel }: MenuFormPr
               onImageUploaded={(url) => setFormData({ ...formData, image_url: url })}
               onImageRemoved={() => setFormData({ ...formData, image_url: '' })}
               bucket="menus"
-              restaurantId={restaurantId}
-              label="Ajouter une photo du menu"
+              restaurantId={String(restaurantId)}
+              label="Ajouter une photo du menu composé"
               enableCompression={true}
             />
           </div>
