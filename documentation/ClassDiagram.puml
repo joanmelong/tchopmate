@@ -1,0 +1,130 @@
+@startuml "classe"
+class Client {
+  + commander() : void 
+  +inscrire() : Client
+  +seconnecter(): void
+  +consulterHistoriqueCom() : void
+  + ConsulterMenu(): void
+}
+
+
+
+class Plat{
+  -idPlat: string
+  -nom: String 
+  -description: String 
+  -prix: double 
+  - image: object
+  -categorie: String 
+  +ajouterPlat() : void
+  +modifierPlat() : void
+  +supprimerPlat() : void
+
+}
+
+
+class Menu{
+  -idMenu: string
+  -date: Date 
+  -listePlats: string
+  +creerMenu() : void
+  +ajouterPlat() : void
+  +retirerPlat() : void 
+}
+
+class Restaurant{
+  -idRestaurant: string
+  -nom: String 
+  -localisation: String
+  -photo : object 
+  +gererMenus() : void
+  +gererCommandes() : void
+  +gererPlats() : void
+}
+
+
+class Gerant { 
+  +gererMenu() : void
+  +validerMenu() : void
+  +creerPlat(): void
+}
+
+class Paiement { 
+  -idPaiement: int 
+  -montant: double 
+  -date: Date 
+  -methode: methodePayement
+  +effectuerPaiement() : void
+  +verifierPaiement() : void
+}
+
+enum methodePayement{
+  MobileMoney
+  OrangeMoney
+  Espece
+  Carte_bancaire
+}
+
+class Commande {
+  -idCommande: string
+  -date: Date 
+  -statut: statut
+  -montantTotal: double 
+  -commentaire : string
+  -livraison: boolean
+  -crenau_retrait: Date
+  +creerCommande() : void
+  +modifierCommande() : void
+  +annulerCommande() : void
+  +calculerMontant() : void
+  + listerPlat() : void
+}
+
+class Administrateur { 
+  +gerercomptes() : void
+  +genererRapports() : void
+  +configurerSysteme() : void
+  +gererDonnees() :void
+}
+
+ class compte{
+  -id: int 
+  -nom: String
+  -prenom: String
+  - email: string
+  - numero_tel : int
+  -mot_de_passe : string
+  + seconnecter(): void
+  + deconnecter():void
+}
+
+
+
+enum statut{
+  LIVREE
+  EN_ATTENTE
+  PAYE
+  
+}
+
+
+Gerant --|> compte
+Client --|> compte
+Administrateur --|>compte
+
+' Relations entre les classes 
+Client "1" -- "0..*" Commande : passe 
+Commande "1" -- "1..*" Plat : contient 
+Menu "1..*" o-- "1..*" Plat: contient 
+Commande "1" -- "1" Paiement : associe 
+Restaurant "1..*" -- "1" Menu : possede
+Client "0..*" -- "0..*" Menu : consulte
+Gerant "1" -- "1" Restaurant : s'occupe
+Gerant "1" -- "0..*" Menu : gere
+Commande "0..*" ..>"1" methodePayement :inclut
+Commande "0..*" ..>"1" statut : possede
+Administrateur "1" -- "0..*" Gerant : gere
+
+@enduml
+
+
