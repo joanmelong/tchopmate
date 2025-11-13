@@ -15,7 +15,6 @@ import {
   Coffee,
   Cookie,
   Search,
-  Filter,
   ArrowLeft,
   Heart,
   ShoppingCart,
@@ -46,7 +45,6 @@ export default function MenuPage() {
   const [user, setUser] = useState<User | null>(null)
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
-  const [showFilters, setShowFilters] = useState(false)
   const [cart, setCart] = useState<CartItem[]>([])
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -93,16 +91,12 @@ export default function MenuPage() {
     })
   }
 
-  const categories = [
-    { id: "all", name: "Tout", icon: ChefHat },
-    { id: "plats", name: "Plats", icon: ChefHat },
-    { id: "boissons", name: "Boissons", icon: Coffee },
-    { id: "desserts", name: "Desserts", icon: Cookie },
-  ]
-
   // Charger les plats depuis les menus activés
   const [menuItems, setMenuItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; icon: any }>>([
+    { id: "all", name: "Tout", icon: ChefHat },
+  ])
 
   useEffect(() => {
     loadActiveMenuDishes()
@@ -162,6 +156,32 @@ export default function MenuPage() {
       })
 
       setMenuItems(dishes)
+
+      // Extraire les catégories uniques des plats
+      const uniqueCategories = Array.from(new Set(dishes.map(d => d.category).filter(Boolean)))
+      
+      // Mapper les catégories avec des icônes appropriées
+      const categoryIcons: Record<string, any> = {
+        'plats': ChefHat,
+        'plat': ChefHat,
+        'boissons': Coffee,
+        'boisson': Coffee,
+        'desserts': Cookie,
+        'dessert': Cookie,
+        'entrées': ChefHat,
+        'entrée': ChefHat,
+      }
+
+      const dynamicCategories = [
+        { id: "all", name: "Tout", icon: ChefHat },
+        ...uniqueCategories.map(cat => ({
+          id: cat,
+          name: cat.charAt(0).toUpperCase() + cat.slice(1),
+          icon: categoryIcons[cat.toLowerCase()] || ChefHat,
+        }))
+      ]
+
+      setCategories(dynamicCategories)
     } catch (error) {
       console.error('Error loading menu dishes:', error)
     } finally {
@@ -505,59 +525,31 @@ export default function MenuPage() {
         {/* Page Header */}
         <div className="mb-8">
           <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-4 sm:p-6 text-white">
-            <h2 className="text-xl sm:text-2xl font-bold mb-2">Menu du jour - Samedi 04 Octobre</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2">
+              Menu du jour - {new Date().toLocaleDateString('fr-FR', { 
+                weekday: 'long', 
+                day: '2-digit', 
+                month: 'long' 
+              }).replace(/^\w/, (c) => c.toUpperCase())}
+            </h2>
             <p className="text-sm sm:text-base text-orange-100">
               Découvrez tous nos plats, boissons et desserts disponibles aujourd'hui
             </p>
           </div>
         </div>
 
-        {/* Search and Filter */}
+        {/* Search */}
         <div className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="relative flex-1 w-full sm:max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Rechercher un plat..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              />
-            </div>
-            <Button
-              variant="outline"
-              className="flex items-center space-x-2 bg-transparent w-full sm:w-auto"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-4 w-4" />
-              <span>Filtres</span>
-            </Button>
+          <div className="relative w-full sm:max-w-md mx-auto">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher un plat..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            />
           </div>
-
-          {/* Filter Options */}
-          {showFilters && (
-            <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <label className="flex items-center space-x-2">
-                  <input type="checkbox" className="rounded border-gray-300" />
-                  <span className="text-sm">Végétarien</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input type="checkbox" className="rounded border-gray-300" />
-                  <span className="text-sm">Épicé</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input type="checkbox" className="rounded border-gray-300" />
-                  <span className="text-sm">Disponible</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input type="checkbox" className="rounded border-gray-300" />
-                  <span className="text-sm">Moins de 2000 FCFA</span>
-                </label>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Categories */}
@@ -565,6 +557,10 @@ export default function MenuPage() {
           <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
             {categories.map((category) => {
               const Icon = category.icon
+              const count = category.id === "all" 
+                ? menuItems.length 
+                : menuItems.filter(item => item.category === category.id).length
+              
               return (
                 <Button
                   key={category.id}
@@ -578,6 +574,17 @@ export default function MenuPage() {
                 >
                   <Icon className="h-4 w-4" />
                   <span>{category.name}</span>
+                  {count > 0 && (
+                    <Badge 
+                      className={`ml-1 ${
+                        selectedCategory === category.id 
+                          ? "bg-orange-600 text-white" 
+                          : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {count}
+                    </Badge>
+                  )}
                 </Button>
               )
             })}
