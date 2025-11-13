@@ -23,9 +23,8 @@ export function MenuForm({ restaurantId, menu, onSuccess, onCancel }: MenuFormPr
   const [formData, setFormData] = useState({
     nom: menu?.nom || '',
     description: menu?.description || '',
-    prix: menu?.prix?.toString() || '',
     image_url: menu?.image_url || '',
-    disponible: menu?.disponible ?? true,
+    disponible: menu?.disponible ?? false,
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -35,23 +34,11 @@ export function MenuForm({ restaurantId, menu, onSuccess, onCancel }: MenuFormPr
     setLoading(true);
 
     try {
-      const prix = formData.prix ? parseFloat(formData.prix) : undefined;
-      if (prix !== undefined && (isNaN(prix) || prix < 0)) {
-        toast({
-          title: 'Erreur',
-          description: 'Le prix doit être un nombre positif',
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
-
       if (menu) {
         // Update existing menu
         const updateData: UpdateMenuDTO = {
           nom: formData.nom,
           description: formData.description || undefined,
-          prix,
           image_url: formData.image_url || undefined,
           disponible: formData.disponible,
         };
@@ -66,7 +53,6 @@ export function MenuForm({ restaurantId, menu, onSuccess, onCancel }: MenuFormPr
           restaurant_id: restaurantId,
           nom: formData.nom,
           description: formData.description || undefined,
-          prix,
           image_url: formData.image_url || undefined,
           disponible: formData.disponible,
         };
@@ -120,18 +106,6 @@ export function MenuForm({ restaurantId, menu, onSuccess, onCancel }: MenuFormPr
           </div>
 
           <div>
-            <Label htmlFor="prix">Prix (FCFA)</Label>
-            <Input
-              id="prix"
-              type="number"
-              step="0.01"
-              value={formData.prix}
-              onChange={(e) => setFormData({ ...formData, prix: e.target.value })}
-              placeholder="2500"
-            />
-          </div>
-
-          <div>
             <Label>Image du menu</Label>
             <ImageUpload
               currentImageUrl={formData.image_url}
@@ -144,13 +118,18 @@ export function MenuForm({ restaurantId, menu, onSuccess, onCancel }: MenuFormPr
             />
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg">
             <Switch
               id="disponible"
               checked={formData.disponible}
               onCheckedChange={(checked) => setFormData({ ...formData, disponible: checked })}
             />
-            <Label htmlFor="disponible">Disponible</Label>
+            <div className="flex-1">
+              <Label htmlFor="disponible" className="font-semibold">Activer ce menu</Label>
+              <p className="text-xs text-gray-500 mt-1">
+                Lorsque activé, ce menu sera visible dans la page menu publique
+              </p>
+            </div>
           </div>
 
           <div className="flex gap-2">

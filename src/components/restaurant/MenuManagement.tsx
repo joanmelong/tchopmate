@@ -156,9 +156,16 @@ export function MenuManagement({ restaurantId }: MenuManagementProps) {
                 />
               )}
               <p className="text-sm text-gray-600 mb-2">{menu.description}</p>
-              {menu.prix && (
-                <p className="text-lg font-bold mb-3">{menu.prix} FCFA</p>
-              )}
+              
+              <div className="mb-3">
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  menu.disponible 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {menu.disponible ? '✓ Activé' : 'Désactivé'}
+                </span>
+              </div>
               
               <div className="flex flex-col gap-2 mt-4">
                 <Button
