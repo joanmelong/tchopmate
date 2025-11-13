@@ -8,8 +8,6 @@ import { dishService } from '@/services/DishService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Trash2, Plus, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -24,8 +22,8 @@ export function MenuCompositionManager({ menuId, restaurantId, onBack }: MenuCom
   const [availableDishes, setAvailableDishes] = useState<DishDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [selectedDish, setSelectedDish] = useState<DishDTO | null>(null);
-  const [quantite, setQuantite] = useState(1);
+  const [selectedDishes, setSelectedDishes] = useState<string[]>([]);
+  const [adding, setAdding] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -54,30 +52,54 @@ export function MenuCompositionManager({ menuId, restaurantId, onBack }: MenuCom
     }
   };
 
-  const handleAddDish = async () => {
-    if (!selectedDish) return;
+  const toggleDishSelection = (dishId: string) => {
+    setSelectedDishes(prev => {
+      if (prev.includes(dishId)) {
+        return prev.filter(id => id !== dishId);
+      } else {
+        return [...prev, dishId];
+      }
+    });
+  };
 
-    try {
-      await menuCompositionService.addDishToMenu({
-        menu_id: menuId,
-        plat_id: selectedDish.id,
-        quantite,
-      });
+  const handleAddDishes = async () => {
+    if (selectedDishes.length === 0) {
       toast({
-        title: 'Succès',
-        description: 'Plat ajouté au menu',
-      });
-      setShowAddDialog(false);
-      setSelectedDish(null);
-      setQuantite(1);
-      await loadData();
-    } catch (error) {
-      console.error('Error adding dish:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Erreur lors de l\'ajout du plat',
+        title: 'Attention',
+        description: 'Veuillez sélectionner au moins un plat',
         variant: 'destructive',
       });
+      return;
+    }
+
+    try {
+      setAdding(true);
+      // Ajouter tous les plats sélectionnés
+      await Promise.all(
+        selectedDishes.map(dishId =>
+          menuCompositionService.addDishToMenu({
+            menu_id: menuId,
+            plat_id: dishId,
+            quantite: 1,
+          })
+        )
+      );
+      toast({
+        title: 'Succès',
+        description: `${selectedDishes.length} plat(s) ajouté(s) au menu`,
+      });
+      setShowAddDialog(false);
+      setSelectedDishes([]);
+      await loadData();
+    } catch (error) {
+      console.error('Error adding dishes:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de l\'ajout des plats',
+        variant: 'destructive',
+      });
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -176,7 +198,6 @@ export function MenuCompositionManager({ menuId, restaurantId, onBack }: MenuCom
               <p className="text-sm text-gray-600 mb-2">{menuPlat.plat?.description}</p>
               <div className="flex justify-between items-center">
                 <p className="text-lg font-bold">{menuPlat.plat?.prix} FCFA</p>
-                <span className="text-sm text-gray-500">Qté: {menuPlat.quantite}</span>
               </div>
               {menuPlat.plat?.categorie && (
                 <span className="text-xs bg-gray-100 px-2 py-1 rounded mt-2 inline-block">
@@ -197,7 +218,14 @@ export function MenuCompositionManager({ menuId, restaurantId, onBack }: MenuCom
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Ajouter un plat au menu</DialogTitle>
+            <DialogTitle>
+              Ajouter des plats au menu
+              {selectedDishes.length > 0 && (
+                <span className="ml-2 text-sm text-orange-600">
+                  ({selectedDishes.length} sélectionné{selectedDishes.length > 1 ? 's' : ''})
+                </span>
+              )}
+            </DialogTitle>
           </DialogHeader>
           
           {dishesNotInMenu.length === 0 ? (
@@ -206,17 +234,28 @@ export function MenuCompositionManager({ menuId, restaurantId, onBack }: MenuCom
             </p>
           ) : (
             <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Cliquez sur les plats pour les sélectionner (sélection multiple possible)
+              </p>
+              
               <div className="grid gap-4 md:grid-cols-2">
                 {dishesNotInMenu.map((dish) => (
                   <Card
                     key={dish.id}
                     className={`cursor-pointer transition-all ${
-                      selectedDish?.id === dish.id ? 'ring-2 ring-orange-500' : ''
+                      selectedDishes.includes(dish.id) 
+                        ? 'ring-2 ring-orange-500 bg-orange-50' 
+                        : 'hover:shadow-md'
                     }`}
-                    onClick={() => setSelectedDish(dish)}
+                    onClick={() => toggleDishSelection(dish.id)}
                   >
                     <CardHeader>
-                      <CardTitle className="text-base">{dish.nom}</CardTitle>
+                      <CardTitle className="text-base flex items-center justify-between">
+                        <span>{dish.nom}</span>
+                        {selectedDishes.includes(dish.id) && (
+                          <span className="text-orange-500 text-xl">✓</span>
+                        )}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       {dish.image_url && (
@@ -238,25 +277,25 @@ export function MenuCompositionManager({ menuId, restaurantId, onBack }: MenuCom
                 ))}
               </div>
 
-              {selectedDish && (
-                <div className="border-t pt-4">
-                  <div className="flex items-end gap-4">
-                    <div className="flex-1">
-                      <Label htmlFor="quantite">Quantité</Label>
-                      <Input
-                        id="quantite"
-                        type="number"
-                        min="1"
-                        value={quantite}
-                        onChange={(e) => setQuantite(parseInt(e.target.value) || 1)}
-                      />
-                    </div>
-                    <Button onClick={handleAddDish} className="flex-1">
-                      Ajouter au menu
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <div className="border-t pt-4 flex gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowAddDialog(false);
+                    setSelectedDishes([]);
+                  }}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  onClick={handleAddDishes} 
+                  disabled={selectedDishes.length === 0 || adding}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600"
+                >
+                  {adding ? 'Ajout en cours...' : `Ajouter ${selectedDishes.length > 0 ? `(${selectedDishes.length})` : ''}`}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

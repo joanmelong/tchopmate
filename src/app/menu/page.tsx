@@ -100,7 +100,76 @@ export default function MenuPage() {
     { id: "desserts", name: "Desserts", icon: Cookie },
   ]
 
-  const menuItems = [
+  // Charger les plats depuis les menus activés
+  const [menuItems, setMenuItems] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadActiveMenuDishes()
+  }, [])
+
+  const loadActiveMenuDishes = async () => {
+    try {
+      setLoading(true)
+      // Récupérer tous les menus activés avec leurs plats
+      const { data: activeMenus, error } = await supabase
+        .from('menu')
+        .select(`
+          id,
+          nom,
+          description,
+          image_url,
+          menu_plat (
+            id,
+            quantite,
+            plat (
+              id,
+              nom,
+              description,
+              prix,
+              image_url,
+              categorie,
+              disponible,
+              temps_preparation
+            )
+          )
+        `)
+        .eq('disponible', true)
+
+      if (error) throw error
+
+      // Transformer les données pour correspondre au format attendu
+      const dishes: any[] = []
+      activeMenus?.forEach((menu) => {
+        menu.menu_plat?.forEach((mp: any) => {
+          if (mp.plat && mp.plat.disponible) {
+            dishes.push({
+              id: mp.plat.id,
+              name: mp.plat.nom,
+              description: mp.plat.description || '',
+              price: `${mp.plat.prix} FCFA`,
+              rating: 4.5,
+              image: mp.plat.image_url || null,
+              category: mp.plat.categorie?.toLowerCase() || 'plats',
+              available: mp.plat.disponible,
+              preparationTime: mp.plat.temps_preparation ? `${mp.plat.temps_preparation} min` : '20 min',
+              spicy: false,
+              vegetarian: false,
+              menuName: menu.nom,
+            })
+          }
+        })
+      })
+
+      setMenuItems(dishes)
+    } catch (error) {
+      console.error('Error loading menu dishes:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const oldMenuItems = [
     {
       id: 1,
       name: "Ndolé aux crevettes",
@@ -516,11 +585,29 @@ export default function MenuPage() {
         </div>
 
         {/* Menu Items */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-          {filteredItems.map((item) => (
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {filteredItems.map((item) => (
             <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
-              <div className="relative h-48">
-                <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
+              <div className="relative h-48 bg-gray-100">
+                {item.image ? (
+                  <img 
+                    src={item.image} 
+                    alt={item.name} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16" fill="%239ca3af"%3EImage non disponible%3C/text%3E%3C/svg%3E';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                    <ChefHat className="h-16 w-16 text-gray-400" />
+                  </div>
+                )}
                 {!item.available && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <Badge variant="secondary" className="bg-red-500 text-white">
@@ -571,14 +658,15 @@ export default function MenuPage() {
                   disabled={!item.available}
                   onClick={() => addToCart(item)}
                 >
-                  {item.available ? "Ajouter au panier" : "Non disponible"}
+                  {item.available ? "Commander" : "Non disponible"}
                 </Button>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {filteredItems.length === 0 && (
+        {!loading && filteredItems.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">Aucun élément trouvé pour votre recherche.</p>
             <Button
