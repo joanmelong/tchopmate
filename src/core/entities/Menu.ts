@@ -109,7 +109,7 @@ export interface MenuProps {
  * DTOs pour la gestion simplifiée des menus et plats (pour l'interface utilisateur)
  */
 export interface CreateMenuDTO {
-  restaurant_id: number; // INTEGER dans PostgreSQL
+  restaurant_id: string; // UUID dans PostgreSQL
   nom: string;
   description?: string;
   prix?: number;
@@ -127,7 +127,7 @@ export interface UpdateMenuDTO {
 
 export interface MenuDTO {
   id: string;
-  restaurant_id: number; // INTEGER dans PostgreSQL
+  restaurant_id: string; // UUID dans PostgreSQL
   nom: string;
   description?: string;
   prix?: number;

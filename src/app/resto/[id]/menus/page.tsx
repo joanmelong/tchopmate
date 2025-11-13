@@ -57,7 +57,7 @@ export default function MenusPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <MenuManagement restaurantId={parseInt(restaurant.id, 10)} />
+      <MenuManagement restaurantId={restaurant.id} />
     </div>
   );
 }

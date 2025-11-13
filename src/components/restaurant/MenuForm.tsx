@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { ImageUpload } from '@/components/ui/image-upload';
 
 interface MenuFormProps {
-  restaurantId: number; // INTEGER dans PostgreSQL
+  restaurantId: string; // UUID dans PostgreSQL
   menu?: MenuDTO | null;
   onSuccess: () => void;
   onCancel: () => void;
@@ -139,7 +139,7 @@ export function MenuForm({ restaurantId, menu, onSuccess, onCancel }: MenuFormPr
               onImageRemoved={() => setFormData({ ...formData, image_url: '' })}
               bucket="menus"
               restaurantId={restaurantId}
-              label="Ajouter une photo du menu"
+              label="Ajouter une photo du menu composé"
               enableCompression={true}
             />
           </div>
