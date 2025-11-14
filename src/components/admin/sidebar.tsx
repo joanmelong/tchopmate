@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { LayoutDashboard, UtensilsCrossed, BookOpen, ShoppingCart, BarChart3, ChevronLeft, LogOut } from "lucide-react"
+import { useSession } from "@/hooks/use-session"
 
 interface SidebarProps {
   open: boolean
@@ -12,13 +13,17 @@ interface SidebarProps {
 
 export function Sidebar({ open, onOpenChange }: SidebarProps) {
   const pathname = usePathname()
+  const { user } = useSession()
+
+  // Use the connected gerant's compte.id in URLs; fallback to literal 'id' during initial load
+  const gerantId = user?.id ? String(user.id) : 'id'
 
   const menuItems = [
-    { href: "/resto/id", label: "Tableau de bord", icon: LayoutDashboard },
-    { href: "/resto/id/dishes", label: "Gestion des plats", icon: UtensilsCrossed },
-    { href: "/resto/id/menus", label: "Gestion des menus", icon: BookOpen },
-    { href: "/resto/id/orders", label: "Commandes", icon: ShoppingCart },
-    { href: "/resto/id/analytics", label: "Statistiques", icon: BarChart3 },
+    { href: `/resto/${gerantId}`, label: "Tableau de bord", icon: LayoutDashboard },
+    { href: `/resto/${gerantId}/dishes`, label: "Gestion des plats", icon: UtensilsCrossed },
+    { href: `/resto/${gerantId}/menus`, label: "Gestion des menus", icon: BookOpen },
+    { href: `/resto/${gerantId}/orders`, label: "Commandes", icon: ShoppingCart },
+    { href: `/resto/${gerantId}/analytics`, label: "Statistiques", icon: BarChart3 },
   ]
 
   return (
