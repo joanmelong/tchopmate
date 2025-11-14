@@ -31,11 +31,14 @@ import { supabase } from "@/lib/supabaseClient"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 type OrderItem = {
-  id: number
+  id: number | string
   name: string
   quantity: number
-  price: number
+  price: number | string
   image: string
+  description?: string | null
+  categorie?: string | null
+  temps_preparation?: number | null
 }
 
 type Order = {
@@ -49,12 +52,112 @@ type Order = {
   restaurantAddress: string
 }
 
+// Type pour les données de l'API
+type ApiCommandeItem = {
+  id?: string | number
+  plat_id?: string
+  quantite?: number
+  quantity?: number
+  plat?: {
+    nom?: string
+    prix?: number
+    image_url?: string
+    description?: string
+    categorie?: string
+    temps_preparation?: number
+  }
+  name?: string
+  price?: number
+  image?: string
+  description?: string
+  categorie?: string
+  temps_preparation?: number
+}
+
+type ApiCommande = {
+  id_commande?: string
+  id?: string
+  date_commande?: string
+  created_at?: string
+  date?: string
+  statut?: string
+  montant_total?: number
+  total?: number
+  clientName?: string
+  client_name?: string
+  clientPhone?: string
+  client_phone?: string
+  restaurantAddress?: string
+  restaurant_address?: string
+  items?: ApiCommandeItem[]
+  client?: {
+    id?: number
+    nom?: string
+    prenom?: string
+    email?: string
+    numero_tel?: string
+  }
+}
+
+// Fonction pour transformer les données de l'API en format Order
+function transformApiCommande(apiCommande: ApiCommande): Order | null {
+  try {
+    // Transformer les items avec toutes les informations du plat
+    const items: OrderItem[] = (apiCommande.items || []).map((item: ApiCommandeItem, index: number) => {
+      const plat = item.plat || {}
+      return {
+        id: item.id || item.plat_id || index, // Utiliser id, plat_id, ou index comme clé unique
+        name: plat.nom || item.name || 'Plat inconnu',
+        quantity: item.quantite || item.quantity || 1,
+        price: plat.prix || item.price || 0,
+        image: plat.image_url || item.image || '/placeholder.svg',
+        description: plat.description || item.description || null,
+        categorie: plat.categorie || item.categorie || null,
+        temps_preparation: plat.temps_preparation || item.temps_preparation || null,
+      }
+    })
+
+    // Déterminer le statut
+    let status: "en_cours" | "livree" = "en_cours"
+    if (apiCommande.statut) {
+      const statutLower = apiCommande.statut.toLowerCase()
+      if (statutLower === 'livree' || statutLower === 'livré' || statutLower === 'livre') {
+        status = "livree"
+      } else {
+        status = "en_cours"
+      }
+    }
+
+    // Récupérer les informations client depuis l'API ou utiliser les valeurs par défaut
+    const client = apiCommande.client || {}
+    const clientName = client.nom && client.prenom
+      ? `${client.prenom} ${client.nom}`
+      : apiCommande.clientName || apiCommande.client_name || 'Client'
+    const clientPhone = client.numero_tel || apiCommande.clientPhone || apiCommande.client_phone || ''
+
+    return {
+      id: apiCommande.id_commande || apiCommande.id || `CMD-${Date.now()}`,
+      date: apiCommande.date_commande || apiCommande.created_at || apiCommande.date || new Date().toISOString(),
+      status,
+      items,
+      total: apiCommande.montant_total || apiCommande.total || 0,
+      clientName,
+      clientPhone,
+      restaurantAddress: apiCommande.restaurantAddress || apiCommande.restaurant_address || 'Adresse non disponible',
+    }
+  } catch (e) {
+    console.error('Erreur transformation commande:', e, apiCommande)
+    return null
+  }
+}
+
 export default function CommandesPage() {
   const router = useRouter()
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [orders, setOrders] = useState<Order[]>([])
 
   useEffect(() => {
     const getUser = async () => {
@@ -75,7 +178,50 @@ export default function CommandesPage() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const orders: Order[] = [
+  // Charger les commandes depuis localStorage
+  useEffect(() => {
+    const savedOrders = localStorage.getItem('tchopmate-orders')
+    if (savedOrders) {
+      try {
+        const parsed = JSON.parse(savedOrders)
+        setOrders(parsed)
+      } catch (e) {
+        console.warn('Erreur lecture commandes', e)
+        setOrders([])
+      }
+    }
+  }, [])
+
+  // Charger depuis l'API Supabase et synchroniser localStorage
+  useEffect(() => {
+    const fetchFromApi = async () => {
+      try {
+        const mod = await import('@/services/commandes')
+        const commandes = await mod.getCommandes()
+        if (Array.isArray(commandes)) {
+          // Transformer les données de l'API
+          const transformedOrders = commandes
+            .map(transformApiCommande)
+            .filter((order): order is Order => order !== null)
+          
+          if (transformedOrders.length > 0) {
+            setOrders(transformedOrders)
+            try {
+              localStorage.setItem('tchopmate-orders', JSON.stringify(transformedOrders))
+            } catch (e) {
+              console.warn('Erreur sauvegarde commandes local', e)
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Erreur fetch commandes API', e)
+      }
+    }
+
+    fetchFromApi()
+  }, [])
+
+  const defaultOrders: Order[] = [
     {
       id: "CMD-001",
       date: "2024-10-22 12:30",
@@ -87,6 +233,9 @@ export default function CommandesPage() {
           quantity: 2,
           price: 2500,
           image: "/ndole-camerounais-plat-traditionnel.jpg",
+          description: "Plat traditionnel camerounais avec des feuilles de ndolé, des crevettes et de la viande",
+          categorie: "Plat principal",
+          temps_preparation: 45,
         },
         {
           id: 4,
@@ -94,6 +243,9 @@ export default function CommandesPage() {
           quantity: 2,
           price: 500,
           image: "/jus-bissap-hibiscus-rouge.jpg",
+          description: "Jus frais de fleurs d'hibiscus, rafraîchissant et naturel",
+          categorie: "Boisson",
+          temps_preparation: 5,
         },
       ],
       total: 6000,
@@ -112,6 +264,9 @@ export default function CommandesPage() {
           quantity: 1,
           price: 3000,
           image: "/poulet-dg-cameroun-plantain.jpg",
+          description: "Poulet sauté avec plantain, légumes et épices camerounaises",
+          categorie: "Plat principal",
+          temps_preparation: 35,
         },
         {
           id: 3,
@@ -119,6 +274,9 @@ export default function CommandesPage() {
           quantity: 1,
           price: 1800,
           image: "/riz-saut--l-gumes.jpg",
+          description: "Riz sauté avec une variété de légumes frais et épices",
+          categorie: "Plat principal",
+          temps_preparation: 25,
         },
         {
           id: 5,
@@ -126,6 +284,9 @@ export default function CommandesPage() {
           quantity: 1,
           price: 600,
           image: "/jus-orange-frais.jpg",
+          description: "Jus d'orange pressé fraîchement, riche en vitamine C",
+          categorie: "Boisson",
+          temps_preparation: 5,
         },
       ],
       total: 5400,
@@ -144,6 +305,9 @@ export default function CommandesPage() {
           quantity: 3,
           price: 800,
           image: "/banane-plantain-grill-e.jpg",
+          description: "Bananes plantains grillées, servies chaudes",
+          categorie: "Accompagnement",
+          temps_preparation: 15,
         },
         {
           id: 6,
@@ -151,6 +315,9 @@ export default function CommandesPage() {
           quantity: 2,
           price: 300,
           image: "/bouteille-eau-min-rale.jpg",
+          description: "Eau minérale naturelle",
+          categorie: "Boisson",
+          temps_preparation: 0,
         },
       ],
       total: 3000,
@@ -169,6 +336,9 @@ export default function CommandesPage() {
           quantity: 2,
           price: 1000,
           image: "/beignets-haricots-cameroun-frits.jpg",
+          description: "Beignets de haricots frits, croustillants et savoureux",
+          categorie: "Snack",
+          temps_preparation: 20,
         },
       ],
       total: 2000,
@@ -177,6 +347,15 @@ export default function CommandesPage() {
       restaurantAddress: "Restaurant Universitaire Saint Jean, Campus Principal, Yaoundé",
     },
   ]
+
+  // Fusionner les commandes par défaut avec celles chargées
+  useEffect(() => {
+    setOrders((prev) => {
+      if (prev.length > 0) return prev
+      return defaultOrders
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const getStatusBadge = (status: Order["status"]) => {
     switch (status) {
@@ -345,9 +524,9 @@ export default function CommandesPage() {
 
         {/* Orders List */}
         <div className="space-y-4">
-          {orders.map((order) => (
+          {orders.map((order, orderIndex) => (
             <Card
-              key={order.id}
+              key={order.id || `order-${orderIndex}`}
               className="overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-orange-200"
             >
               <CardHeader className="bg-gradient-to-r from-orange-50 to-yellow-50 pb-3">
@@ -379,7 +558,11 @@ export default function CommandesPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {order.items.map((item, index) => (
-                        <Badge key={item.id} variant="outline" className="bg-white border-orange-200 text-gray-700">
+                        <Badge 
+                          key={item.id !== undefined ? `item-${order.id}-${item.id}` : `item-${order.id}-${index}`} 
+                          variant="outline" 
+                          className="bg-white border-orange-200 text-gray-700"
+                        >
                           {item.name} (x{item.quantity})
                         </Badge>
                       ))}
@@ -503,31 +686,62 @@ export default function CommandesPage() {
                   <ShoppingBag className="h-5 w-5 text-orange-500" />
                   Éléments de la commande
                 </h3>
-                <div className="space-y-3">
-                  {selectedOrder.items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200 hover:shadow-md transition-shadow"
-                    >
-                      <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0">
-                        <Image
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.name}
-                          fill
-                          className="object-cover rounded-md border-2 border-orange-200"
-                        />
+                <div className="space-y-4">
+                  {selectedOrder.items.map((item, index) => {
+                    const itemPrice = typeof item.price === 'string' ? Number.parseInt(item.price.replace(/\D/g, '')) : Number(item.price) || 0
+                    const totalPrice = itemPrice * item.quantity
+                    
+                    return (
+                      <div
+                        key={item.id !== undefined ? `detail-item-${selectedOrder.id}-${item.id}` : `detail-item-${selectedOrder.id}-${index}`}
+                        className="p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0">
+                            <Image
+                              src={item.image || "/placeholder.svg"}
+                              alt={item.name}
+                              fill
+                              className="object-cover rounded-md border-2 border-orange-200"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="flex-1">
+                                <h4 className="font-bold text-base sm:text-lg text-gray-900 mb-1">{item.name}</h4>
+                                {item.categorie && (
+                                  <Badge variant="outline" className="text-xs mb-2 border-orange-300 text-orange-700 bg-orange-100">
+                                    {item.categorie}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <p className="font-bold text-orange-600 text-lg">
+                                  {totalPrice} FCFA
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {itemPrice} FCFA × {item.quantity}
+                                </p>
+                              </div>
+                            </div>
+                            {item.description && (
+                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                                {item.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              {item.temps_preparation && (
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  <span>Préparation: {item.temps_preparation} min</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-sm sm:text-base text-gray-900">{item.name}</h4>
-                        <p className="text-xs sm:text-sm text-gray-600 font-medium">
-                          {item.price} FCFA × {item.quantity}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-orange-600 text-lg">{item.price * item.quantity} FCFA</p>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 

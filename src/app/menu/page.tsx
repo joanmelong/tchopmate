@@ -79,9 +79,31 @@ export default function MenuPage() {
     }
   }, [])
 
+  // Charger le panier depuis localStorage au montage
+  useEffect(() => {
+    const savedCart = localStorage.getItem("tchopmate-cart")
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart))
+      } catch (e) {
+        // ignore malformed
+        console.warn("Erreur lecture panier depuis localStorage", e)
+      }
+    }
+  }, [])
+
   useEffect(() => {
     localStorage.setItem("tchopmate-favorites", JSON.stringify(favorites))
   }, [favorites])
+
+  // Sauvegarder le panier à chaque modification pour réutilisation entre pages
+  useEffect(() => {
+    try {
+      localStorage.setItem("tchopmate-cart", JSON.stringify(cart))
+    } catch (e) {
+      console.warn("Erreur sauvegarde panier", e)
+    }
+  }, [cart])
 
   const toggleFavorite = (itemId: number) => {
     setFavorites((prev) => {
@@ -142,7 +164,7 @@ export default function MenuPage() {
     },
     {
       id: 4,
-      name: "Jus de bissap",
+      name: "Jus de Bissap",
       description: "Boisson rafraîchissante à base d'hibiscus",
       price: "500 FCFA",
       rating: 4.6,
@@ -155,7 +177,7 @@ export default function MenuPage() {
     },
     {
       id: 5,
-      name: "Jus d'orange frais",
+      name: "Jus d'orange",
       description: "Jus d'orange pressé à la minute",
       price: "600 FCFA",
       rating: 4.7,
@@ -168,7 +190,7 @@ export default function MenuPage() {
     },
     {
       id: 6,
-      name: "Eau minérale",
+      name: "Eau",
       description: "Eau minérale naturelle 50cl",
       price: "300 FCFA",
       rating: 4.0,
@@ -181,20 +203,20 @@ export default function MenuPage() {
     },
     {
       id: 7,
-      name: "Beignets haricots",
+      name: "Beignets haricot & frites",
       description: "Beignets croustillants aux haricots, parfait pour le petit-déjeuner",
-      price: "1000 FCFA",
+      price: "500 FCFA",
       rating: 4.7,
       image: "/beignets-haricots-cameroun-frits.jpg",
       category: "desserts",
-      available: false,
+      available: true,
       preparationTime: "20 min",
       spicy: false,
       vegetarian: true,
     },
     {
       id: 8,
-      name: "Banane plantain grillée",
+      name: "Banane plantain",
       description: "Banane plantain grillée avec un soupçon de cannelle",
       price: "800 FCFA",
       rating: 4.4,
@@ -700,7 +722,7 @@ export default function MenuPage() {
                 <Button
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
                   onClick={() => {
-                    alert("Commande confirmée!")
+                    router.push('/commande/payment')
                   }}
                 >
                   Confirmer la commande
