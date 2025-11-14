@@ -29,6 +29,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { supabase } from "@/lib/supabaseClient"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
+import { QRCodeButton } from "@/components/ui/qr-code-button"
+import { QRCodeModal } from "@/components/ui/qr-code-modal"
+import { useOrderQRCode } from "@/hooks/use-order-qrcode"
+import { Order as OrderEntity, OrderItem as OrderItemEntity, OrderStatus } from "@/core/entities/Order"
 
 type OrderItem = {
   id: number | string
@@ -157,7 +161,13 @@ export default function CommandesPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
   const [orders, setOrders] = useState<Order[]>([])
+
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false)
+  const [currentOrderForQR, setCurrentOrderForQR] = useState<Order | null>(null)
+  const { qrCode, isGenerating, generateQRCode, resetQRCode } = useOrderQRCode()
+
 
   useEffect(() => {
     const getUser = async () => {
@@ -381,6 +391,44 @@ export default function CommandesPage() {
     setIsDetailOpen(true)
   }
 
+  const handleShowQRCode = async (order: Order) => {
+    setCurrentOrderForQR(order)
+    setIsQRModalOpen(true)
+
+    // Convertir l'order en entité métier
+    const orderItems = order.items.map(
+      (item) =>
+        new OrderItemEntity({
+          platId: item.id,
+          platNom: item.name,
+          quantite: item.quantity,
+          prixUnitaire: item.price,
+        })
+    )
+
+    const orderEntity = new OrderEntity({
+      id: parseInt(order.id.split("-")[1]),
+      studentId: 1, // À remplacer par l'ID réel de l'étudiant
+      restaurantId: "1", // À remplacer par l'ID réel du restaurant
+      items: orderItems,
+      status: order.status === "livree" ? OrderStatus.RETIREE : OrderStatus.EN_ATTENTE,
+      totalPrice: order.total,
+      createdAt: new Date(order.date),
+    })
+
+    try {
+      await generateQRCode(orderEntity)
+    } catch (error) {
+      console.error("Erreur lors de la génération du QR code:", error)
+    }
+  }
+
+  const handleCloseQRModal = () => {
+    setIsQRModalOpen(false)
+    resetQRCode()
+    setCurrentOrderForQR(null)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-50">
       {/* Header */}
@@ -580,12 +628,15 @@ export default function CommandesPage() {
                         <p className="text-lg font-bold text-orange-600">{order.total} FCFA</p>
                       </div>
                     </div>
-                    <Button
-                      className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
-                      onClick={() => openOrderDetail(order)}
-                    >
-                      Voir détails
-                    </Button>
+                    <div className="flex gap-2">
+                      <QRCodeButton onClick={() => handleShowQRCode(order)} size="sm" />
+                      <Button
+                        className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                        onClick={() => openOrderDetail(order)}
+                      >
+                        Voir détails
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -774,6 +825,15 @@ export default function CommandesPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* QR Code Modal */}
+      <QRCodeModal
+        isOpen={isQRModalOpen}
+        onClose={handleCloseQRModal}
+        qrCodeDataUrl={qrCode}
+        orderId={currentOrderForQR?.id || ""}
+        isLoading={isGenerating}
+      />
 
       {/* Footer */}
       <Footer />
