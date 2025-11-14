@@ -13,7 +13,7 @@ import { CheckCircle, Clock, AlertCircle } from "lucide-react"
 interface OrderDetailDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  order?: any
+  order?: { id: string; customer: string; items: Array<{ name: string; qty: number; price: string }>; total: string; status: string; time: string }
   onMarkAsInProgress?: (orderId: string) => void
   onMarkAsDelivered?: (orderId: string) => void
 }
@@ -43,13 +43,13 @@ export function OrderDetailDialog({
 
           <div>
             <p className="text-sm text-gray-600">Adresse de livraison</p>
-            <p className="font-semibold text-gray-900">{order.address}</p>
+            <p className="font-semibold text-gray-900">Adresse non spécifiée</p>
           </div>
 
           <div>
             <p className="text-sm text-gray-600 mb-2">Articles commandés</p>
             <div className="bg-orange-50 rounded p-3 space-y-2">
-              {order.items.map((item: any, idx: number) => (
+              {order.items.map((item: { name: string; qty: number; price: string }, idx: number) => (
                 <div key={idx} className="flex justify-between text-sm">
                   <span className="text-gray-700">
                     {item.name} × {item.qty}

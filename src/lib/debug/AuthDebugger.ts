@@ -157,5 +157,5 @@ export class AuthDebugger {
 
 // Fonction globale pour le débogage (à supprimer en production)
 if (typeof window !== 'undefined') {
-  (window as any).authDebugger = AuthDebugger;
+  (window as unknown as { authDebugger: typeof AuthDebugger }).authDebugger = AuthDebugger;
 }

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 interface MenuDetailDialogProps {
   menuId: string;
@@ -73,10 +74,12 @@ export function MenuDetailDialog({ menuId, open, onOpenChange }: MenuDetailDialo
             {/* Image du menu */}
             {menu.image_url && (
               <div>
-                <img
+                <Image
                   src={menu.image_url}
                   alt={menu.nom}
                   className="w-full h-48 object-cover rounded-lg"
+                  width={600}
+                  height={192}
                 />
               </div>
             )}
@@ -110,10 +113,12 @@ export function MenuDetailDialog({ menuId, open, onOpenChange }: MenuDetailDialo
 
                       {/* Image du plat */}
                       {menuPlat.plat?.image_url && (
-                        <img
+                        <Image
                           src={menuPlat.plat.image_url}
                           alt={menuPlat.plat.nom}
                           className="w-20 h-20 object-cover rounded"
+                          width={80}
+                          height={80}
                         />
                       )}
 

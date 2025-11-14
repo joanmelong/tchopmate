@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, Eye, Utensils } from 'lucide-react';
+import Image from 'next/image';
 
 interface MenuCardProps {
   menu: MenuDTO;
@@ -109,10 +110,12 @@ export function MenuCard({
       </CardHeader>
       <CardContent>
         {menu.image_url && (
-          <img
+          <Image
             src={menu.image_url}
             alt={menu.nom}
             className="w-full h-32 object-cover rounded mb-2"
+            width={600}
+            height={128}
           />
         )}
         

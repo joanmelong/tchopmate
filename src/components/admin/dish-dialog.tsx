@@ -19,8 +19,8 @@ import { ImageUploadField } from "./image-upload-field"
 interface DishDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  dish?: any
-  onSave?: (dishData: any) => void
+  dish?: { id?: string; nom: string; prix: number; categorie: string; description?: string; image_url?: string; disponible: boolean }
+  onSave?: (dishData: { nom: string; prix: number; categorie: string; description?: string; image_url?: string; disponible: boolean }) => void
 }
 
 export function DishDialog({ open, onOpenChange, dish, onSave }: DishDialogProps) {
@@ -38,15 +38,15 @@ export function DishDialog({ open, onOpenChange, dish, onSave }: DishDialogProps
   useEffect(() => {
     if (dish) {
       setFormData({
-        name: dish.name || "",
+        name: dish.nom || "",
         description: dish.description || "",
-        price: dish.price || "",
-        waitTime: dish.waitTime || "",
-        type: dish.type || "none",
+        price: dish.prix?.toString() || "",
+        waitTime: "",
+        type: dish.categorie || "none",
         image: null,
-        available: dish.available !== false,
+        available: dish.disponible !== false,
       })
-      setImagePreview(dish.image || "")
+      setImagePreview(dish.image_url || "")
     } else {
       setFormData({
         name: "",
@@ -66,7 +66,18 @@ export function DishDialog({ open, onOpenChange, dish, onSave }: DishDialogProps
       alert("Veuillez remplir tous les champs obligatoires")
       return
     }
-    onSave?.(formData)
+    
+    // Transform form data to match expected French property names
+    const dishData = {
+      nom: formData.name,
+      prix: parseFloat(formData.price),
+      categorie: formData.type,
+      description: formData.description,
+      image_url: imagePreview,
+      disponible: formData.available,
+    }
+    
+    onSave?.(dishData)
   }
 
   return (

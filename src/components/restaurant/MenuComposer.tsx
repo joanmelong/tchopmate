@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Plus, X, GripVertical, Search } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import Image from 'next/image';
 
 interface MenuComposerProps {
   menuId: string;
@@ -180,10 +181,12 @@ export function MenuComposer({ menuId, restaurantId, onClose }: MenuComposerProp
                     <GripVertical className="h-5 w-5 text-gray-400 cursor-move" />
                     
                     {menuPlat.plat?.image_url && (
-                      <img
+                      <Image
                         src={menuPlat.plat.image_url}
                         alt={menuPlat.plat.nom}
                         className="w-16 h-16 object-cover rounded"
+                        width={64}
+                        height={64}
                       />
                     )}
 
@@ -254,10 +257,12 @@ export function MenuComposer({ menuId, restaurantId, onClose }: MenuComposerProp
                     className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50"
                   >
                     {dish.image_url && (
-                      <img
+                      <Image
                         src={dish.image_url}
                         alt={dish.nom}
                         className="w-16 h-16 object-cover rounded"
+                        width={64}
+                        height={64}
                       />
                     )}
 

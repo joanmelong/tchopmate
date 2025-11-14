@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { UtensilsCrossed, ShoppingBag, TrendingUp, TrendingDown, Clock, DollarSi
 import { AdminSidebar } from "@/components/ui/admin-sidebar"
 
 export default function AdminDashboard() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  // const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const stats = [
     {
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="mb-2 text-3xl font-bold text-gray-900">Tableau de bord</h1>
-            <p className="text-gray-600">Vue d'ensemble de votre restaurant universitaire</p>
+            <p className="text-gray-600">Vue d&apos;ensemble de votre restaurant universitaire</p>
           </div>
 
           {/* Stats Grid */}
@@ -182,7 +182,7 @@ export default function AdminDashboard() {
                   <UtensilsCrossed className="h-5 w-5" />
                   Plats populaires
                 </CardTitle>
-                <CardDescription className="text-amber-100">Les plats les plus commandés aujourd'hui</CardDescription>
+                <CardDescription className="text-amber-100">Les plats les plus commandés aujourd&apos;hui</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-4">

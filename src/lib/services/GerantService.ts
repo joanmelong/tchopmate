@@ -21,7 +21,7 @@ export interface Gerant {
     id_restaurant: string;
     nom: string;
     localisation?: string;
-  };
+  }[];
 }
 
 export interface CreateGerantData {
