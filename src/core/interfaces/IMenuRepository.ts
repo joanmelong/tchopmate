@@ -95,3 +95,28 @@ export interface IPlatRepository {
    */
   setDisponible(id: number, disponible: boolean): Promise<void>;
 }
+
+/**
+ * Extension pour gérer les DTOs simplifiés (pour l'interface de gestion)
+ */
+import { MenuDTO, CreateMenuDTO, UpdateMenuDTO } from '../entities/Menu';
+import { DishDTO, CreateDishDTO, UpdateDishDTO } from '../entities/Dish';
+
+export interface IMenuManagementRepository {
+  getMenusByRestaurantId(restaurantId: string): Promise<MenuDTO[]>;
+  getMenuById(id: string): Promise<MenuDTO | null>;
+  createMenu(data: CreateMenuDTO): Promise<MenuDTO>;
+  updateMenu(id: string, data: UpdateMenuDTO): Promise<MenuDTO>;
+  deleteMenu(id: string): Promise<void>;
+  toggleMenuAvailability(id: string, disponible: boolean): Promise<MenuDTO>;
+}
+
+export interface IDishManagementRepository {
+  getDishesByRestaurantId(restaurantId: string): Promise<DishDTO[]>;
+  getDishesByCategory(restaurantId: string, category: string): Promise<DishDTO[]>;
+  getDishById(id: string): Promise<DishDTO | null>;
+  createDish(data: CreateDishDTO): Promise<DishDTO>;
+  updateDish(id: string, data: UpdateDishDTO): Promise<DishDTO>;
+  deleteDish(id: string): Promise<void>;
+  toggleDishAvailability(id: string, disponible: boolean): Promise<DishDTO>;
+}

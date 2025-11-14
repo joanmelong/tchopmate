@@ -105,6 +105,38 @@ export interface MenuProps {
   updatedAt?: Date;
 }
 
+/**
+ * DTOs pour la gestion simplifiée des menus et plats (pour l'interface utilisateur)
+ */
+export interface CreateMenuDTO {
+  restaurant_id: string; // UUID dans PostgreSQL
+  nom: string;
+  description?: string;
+  prix?: number;
+  image_url?: string;
+  disponible?: boolean;
+}
+
+export interface UpdateMenuDTO {
+  nom?: string;
+  description?: string;
+  prix?: number;
+  image_url?: string;
+  disponible?: boolean;
+}
+
+export interface MenuDTO {
+  id: string;
+  restaurant_id: string; // UUID dans PostgreSQL
+  nom: string;
+  description?: string;
+  prix?: number;
+  image_url?: string;
+  disponible: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export class Menu {
   private props: MenuProps;
 
