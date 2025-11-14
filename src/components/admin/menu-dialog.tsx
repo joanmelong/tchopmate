@@ -18,8 +18,8 @@ import { Search } from "lucide-react"
 interface MenuDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  menu?: any
-  onSave?: (menuData: any) => void
+  menu?: { id?: string; nom: string; description?: string; prix: number; image_url?: string; disponible: boolean }
+  onSave?: (menuData: { nom: string; description?: string; prix: number; image_url?: string; disponible: boolean }) => void
 }
 
 // Mock dishes data
@@ -36,7 +36,11 @@ const AVAILABLE_DISHES = [
 const CATEGORIES = ["Tous", "Plats", "Boissons", "Desserts"]
 
 export function MenuDialog({ open, onOpenChange, menu, onSave }: MenuDialogProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    date: string;
+    dishIds: number[];
+  }>({
     name: "",
     date: "",
     dishIds: [],
@@ -47,9 +51,9 @@ export function MenuDialog({ open, onOpenChange, menu, onSave }: MenuDialogProps
   useEffect(() => {
     if (menu) {
       setFormData({
-        name: menu.name || "",
-        date: menu.date || "",
-        dishIds: menu.dishIds || [],
+        name: menu.nom || "",
+        date: "",
+        dishIds: [],
       })
     } else {
       setFormData({
@@ -71,10 +75,20 @@ export function MenuDialog({ open, onOpenChange, menu, onSave }: MenuDialogProps
       alert("Veuillez sélectionner au moins un plat")
       return
     }
-    onSave?.(formData)
+    
+    // Transform form data to match expected French property names
+    const menuData = {
+      nom: formData.name,
+      description: "",
+      prix: 0,
+      image_url: "",
+      disponible: true,
+    }
+    
+    onSave?.(menuData)
   }
 
-  const toggleDish = (dishId) => {
+  const toggleDish = (dishId: number) => {
     setFormData({
       ...formData,
       dishIds: formData.dishIds.includes(dishId)
@@ -107,7 +121,7 @@ export function MenuDialog({ open, onOpenChange, menu, onSave }: MenuDialogProps
               placeholder="Ex: Menu du lundi"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              disabled={menu?.isDefault}
+              disabled={false}
             />
           </div>
 
@@ -118,7 +132,7 @@ export function MenuDialog({ open, onOpenChange, menu, onSave }: MenuDialogProps
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              disabled={menu?.isDefault}
+              disabled={false}
             />
           </div>
 

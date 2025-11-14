@@ -6,6 +6,7 @@ import { useState } from "react"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
+import Image from "next/image"
 
 interface ImageUploadFieldProps {
   label: string
@@ -77,7 +78,7 @@ export function ImageUploadField({ label, value, onChange, preview, onPreviewCha
         <label htmlFor={`image-upload-${label}`} className="cursor-pointer block">
           {preview ? (
             <div className="space-y-2">
-              <img src={preview || "/placeholder.svg"} alt="Preview" className="w-full h-32 object-cover rounded" />
+              <Image src={preview || "/placeholder.svg"} alt="Preview" className="w-full h-32 object-cover rounded" width={600} height={128} />
               <p className="text-sm text-gray-600">Cliquez pour changer l&apos;image</p>
             </div>
           ) : (

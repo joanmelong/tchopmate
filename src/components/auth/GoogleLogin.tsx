@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 // composant google auth
 export function GoogleLogin() {
   const handleGoogleLogin = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: "http://localhost:3000/home", // après succès

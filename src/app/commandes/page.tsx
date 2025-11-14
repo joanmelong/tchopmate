@@ -378,7 +378,7 @@ export default function CommandesPage() {
                       Articles commandés:
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {order.items.map((item, index) => (
+                      {order.items.map((item) => (
                         <Badge key={item.id} variant="outline" className="bg-white border-orange-200 text-gray-700">
                           {item.name} (x{item.quantity})
                         </Badge>
