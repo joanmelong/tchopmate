@@ -188,47 +188,63 @@ export default function CommandesPage() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Charger les commandes depuis localStorage
+  // Charger depuis localStorage au démarrage
   useEffect(() => {
     const savedOrders = localStorage.getItem('tchopmate-orders')
     if (savedOrders) {
       try {
         const parsed = JSON.parse(savedOrders)
+        console.log('Commandes chargées depuis localStorage:', parsed)
         setOrders(parsed)
       } catch (e) {
-        console.warn('Erreur lecture commandes', e)
+        console.warn('Erreur lecture commandes localStorage', e)
         setOrders([])
       }
     }
   }, [])
 
-  // Charger depuis l'API Supabase et synchroniser localStorage
+  // Synchroniser avec la BD (fetch depuis l'API et mettre à jour localStorage)
   useEffect(() => {
-    const fetchFromApi = async () => {
+    const syncFromApi = async () => {
       try {
         const mod = await import('@/services/commandes')
+        console.log('Appel API getCommandes...')
         const commandes = await mod.getCommandes()
-        if (Array.isArray(commandes)) {
-          // Transformer les données de l'API
+        
+        if (Array.isArray(commandes) && commandes.length > 0) {
+          console.log('Commandes reçues de l\'API:', commandes)
+          
+          // Transformer les données de l'API au format Order
           const transformedOrders = commandes
             .map(transformApiCommande)
             .filter((order): order is Order => order !== null)
           
+          console.log('Commandes transformées:', transformedOrders)
+          
           if (transformedOrders.length > 0) {
+            // Mettre à jour l'état
             setOrders(transformedOrders)
+            
+            // Synchroniser avec localStorage
             try {
               localStorage.setItem('tchopmate-orders', JSON.stringify(transformedOrders))
+              console.log('Commandes synchronisées avec localStorage')
             } catch (e) {
-              console.warn('Erreur sauvegarde commandes local', e)
+              console.warn('Erreur sauvegarde commandes localStorage', e)
             }
           }
+        } else {
+          console.log('Pas de commandes reçues de l\'API')
         }
-      } catch (e) {
-        console.warn('Erreur fetch commandes API', e)
+      } catch (e: any) {
+        console.warn('Erreur synchronisation API:', e?.message || e)
+        // Ne pas bloquer si l'API échoue - utiliser les données du localStorage
       }
     }
 
-    fetchFromApi()
+    // Donner un délai court pour que l'authentification soit en place
+    const timer = setTimeout(syncFromApi, 500)
+    return () => clearTimeout(timer)
   }, [])
 
   const defaultOrders: Order[] = [
@@ -392,35 +408,8 @@ export default function CommandesPage() {
   }
 
   const handleShowQRCode = async (order: Order) => {
-    setCurrentOrderForQR(order)
-    setIsQRModalOpen(true)
-
-    // Convertir l'order en entité métier
-    const orderItems = order.items.map(
-      (item) =>
-        new OrderItemEntity({
-          platId: item.id,
-          platNom: item.name,
-          quantite: item.quantity,
-          prixUnitaire: item.price,
-        })
-    )
-
-    const orderEntity = new OrderEntity({
-      id: parseInt(order.id.split("-")[1]),
-      studentId: 1, // À remplacer par l'ID réel de l'étudiant
-      restaurantId: "1", // À remplacer par l'ID réel du restaurant
-      items: orderItems,
-      status: order.status === "livree" ? OrderStatus.RETIREE : OrderStatus.EN_ATTENTE,
-      totalPrice: order.total,
-      createdAt: new Date(order.date),
-    })
-
-    try {
-      await generateQRCode(orderEntity)
-    } catch (error) {
-      console.error("Erreur lors de la génération du QR code:", error)
-    }
+    // Rediriger vers la page QR code avec l'ID de la commande
+    router.push(`/commande/qrcode?orderId=${encodeURIComponent(order.id)}`)
   }
 
   const handleCloseQRModal = () => {

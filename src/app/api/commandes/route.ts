@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   try {
     // Vérifier l'authentification et récupérer les informations du client
     const client = await getClientFromRequest(request);
-
+    console.log(client)
     if (!client) {
       return NextResponse.json(
         { error: "Authentification requise. Veuillez vous connecter." },

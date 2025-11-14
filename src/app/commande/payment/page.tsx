@@ -1,3 +1,5 @@
+// Fichier: page2.tsx
+
 "use client"
 
 import React, { useEffect, useState } from "react"
@@ -6,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { ShoppingCart, CreditCard, DollarSign, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createCommande } from "@/services/commandes"
+import { QRCodePersistenceService, type QRCodeData } from "@/services/qrcode-persistence"
 import { supabase } from "@/lib/supabaseClient"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
@@ -18,45 +21,57 @@ type CartItem = {
 }
 
 export default function PaymentPage() {
-  const router = useRouter()
+ const router = useRouter()
   const [cart, setCart] = useState<CartItem[]>([])
   const [orderId, setOrderId] = useState<string>("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [sessionToken, setSessionToken] = useState<string | null>(null) // CECI MANQUAIT !
   const [isLoading, setIsLoading] = useState(true)
 
-  // Vérifier l'authentification et écouter les changements
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
-      } catch (e) {
-        console.error('Erreur vérification authentification:', e)
-        setUser(null)
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  // Vérification de l'authentification et REDIRECTION IMMÉDIATE
+useEffect(() => {
+  let isMounted = true
 
-    checkAuth()
-
-    // Écouter les changements d'authentification (y compris la connexion)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email)
-      
-      if (session?.user) {
-        // Utilisateur connecté - mettre à jour l'état
+  const handleSession = (session: any | null) => {
+    if (isMounted) {
+      if (session?.user && session.access_token) {
+        // L'utilisateur est connecté. On stocke le token et on arrête le chargement.
         setUser(session.user)
+        setSessionToken(session.access_token)
         setIsLoading(false)
       } else {
-        // Utilisateur déconnecté
-        setUser(null)
+        // L'utilisateur n'est pas connecté (session définitivement nulle)
+        // Redirection forcée vers la page de connexion
+        router.replace('/login?redirect=/commande/payment')
+        // Ne PAS appeler setIsLoading(false) ici, car la redirection quitte la page.
       }
-    })
+    }
+  }
 
-    return () => subscription.unsubscribe()
-  }, [])
+  // 1. Première vérification de l'état de la session (lecture du localStorage)
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (isMounted && session) {
+      handleSession(session)
+    } else if (isMounted) {
+      // Si la session initiale est null, on redirige, car on a fini de vérifier.
+      handleSession(null)
+    }
+  })
+
+  // 2. Écouteur pour les changements en temps réel (déconnexion, expiration du token, etc.)
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    if (isMounted) {
+      // Si l'état change (déconnexion, reconnexion), on gère la nouvelle session
+      handleSession(session)
+    }
+  })
+
+  return () => { 
+    isMounted = false 
+    subscription.unsubscribe() // Nettoyage de l'écouteur
+  }
+}, [router])
 
   useEffect(() => {
     const saved = localStorage.getItem("tchopmate-cart")
@@ -80,63 +95,190 @@ export default function PaymentPage() {
       return total + price * item.quantity
     }, 0)
 
-  const saveOrderAndClearCart = (paymentMethod: string) => {
-    const order = {
-      id: orderId || `CMD-${Date.now()}`,
-      date: new Date().toISOString(),
-      items: cart,
-      total: getTotalPrice(),
-      paymentMethod,
-      status: paymentMethod === 'mobile_money' ? 'pending_payment' : 'to_pay_at_restaurant',
-    }
-    try {
-      localStorage.setItem('lastOrder', JSON.stringify(order))
-      localStorage.removeItem('tchopmate-cart')
-      setCart([])
-    } catch (e) {
-      console.warn('Erreur sauvegarde commande', e)
-    }
-  }
+  // Suppression de saveOrderAndClearCart car c'est la fonction handlePayAtRestaurant qui gère la logique métier API
 
   const handleMobileMoney = () => {
+
     if (cart.length === 0) return
     alert('La fonctionnalité de paiement par Mobile Money sera développée prochainement. Veuillez choisir un autre mode de paiement.')
   }
 
-  const handlePayAtRestaurant = async () => {
-    if (cart.length === 0) return
+  // const handlePayAtRestaurant = async () => {
+  //   // Vérification de sécurité avant l'appel API
+  //  if (cart.length === 0 || !sessionToken) { // <-- Utilisez sessionToken pour la vérification
+  //       if (!sessionToken) {
+  //            alert('Session expirée ou utilisateur déconnecté. Veuillez vous reconnecter.')
+  //            router.push('/login?redirect=/commande/payment')
+  //       }
+  //       return
+  //   }
+    
+  //   setIsProcessing(true)
+
+  //     try {
+  //       const payload = {
+  //         items: cart.map((it) => ({ name: it.name, quantity: it.quantity })),
+  //         commentaire: null,
+  //         livraison: false,
+  //         creneau_retrait: null,
+  //       }
+
+  //       // Appel à la logique métier (création de commande)
+      
+  //       const created = await createCommande(payload,sessionToken) // Logique API côté client
+
+  //       // Sauvegarde locale de l'historique de commandes et nettoyage du panier
+  //       try {
+  //         const existingOrders = localStorage.getItem('tchopmate-orders')
+  //         const orders = existingOrders ? JSON.parse(existingOrders) : []
+  //         orders.unshift(created)
+  //         localStorage.setItem('tchopmate-orders', JSON.stringify(orders))
+  //         localStorage.removeItem('tchopmate-cart')
+  //         setCart([])
+  //       } catch (e) {
+  //         console.warn('Erreur sauvegarde commande locale', e)
+  //       }
+
+  //       setIsProcessing(false)
+  //       alert('Commande enregistrée — paiement à effectuer au restaurant')
+  //       // Revenir à la page des menus ou à la liste des commandes
+  //       router.push('/commandes') 
+  //     } catch (e: any) {
+  //       console.error('Exception création commande:', e)
+  //       const errorMessage = e?.message || 'Erreur inconnue'
+        
+  //       // Failsafe: Redirection si l'API de création de commande renvoie une erreur d'authentification (401)
+  //       if (errorMessage.includes('connecté pour passer une commande') || errorMessage.includes('Authentification requise')) {
+  //            alert('Votre session a expiré. Veuillez vous reconnecter.')
+  //            router.push('/login?redirect=/commande/payment')
+  //       } else {
+  //            alert('Erreur lors de la création de la commande : ' + errorMessage)
+  //       }
+       
+  //       setIsProcessing(false)
+  //     }
+  // }
+ const saveOrderAndClearCart = (paymentMethod: string) => {
+    // Créer l'objet commande au format de l'API
+    const orderId = `CMD-${Date.now()}`
+    const order = {
+      id: orderId,
+      id_commande: orderId,
+      date: new Date().toISOString(),
+      date_commande: new Date().toISOString(),
+      items: cart,
+      total: getTotalPrice(),
+      montant_total: getTotalPrice(),
+      paymentMethod,
+      status: paymentMethod === 'mobile_money' ? 'pending_payment' : 'to_pay_at_restaurant',
+      statut: paymentMethod === 'mobile_money' ? 'en_attente_paiement' : 'en_attente',
+    }
+    
+    try {
+      // 1. Sauvegarder dans localStorage (tchopmate-orders pour l'affichage)
+      const existingOrders = localStorage.getItem('tchopmate-orders')
+      const orders = existingOrders ? JSON.parse(existingOrders) : []
+      orders.unshift(order) // Ajouter en début de liste
+      localStorage.setItem('tchopmate-orders', JSON.stringify(orders))
+      console.log('Commande sauvegardée dans localStorage:', order)
+      
+      // 2. Nettoyer le panier
+      localStorage.removeItem('tchopmate-cart')
+      setCart([])
+    } catch (e) {
+      console.warn('Erreur sauvegarde commande localStorage', e)
+    }
+  }
+
+  // const handleMobileMoney = () => {
+  //   if (cart.length === 0) return
+  //   setIsProcessing(true)
+  //   saveOrderAndClearCart('mobile_money')
+  //   // Simulation de redirection vers le flow Mobile Money
+  //   setTimeout(() => {
+  //     setIsProcessing(false)
+  //     alert('Fonctionnalité Mobile Money pour une prochaine fois .')
+  //     router.push('/commandes')
+  //   }, 700)
+  // }
+   const handlePayAtRestaurant = async () => {
+    if (cart.length === 0 || !sessionToken || !user) {
+      alert('Panier vide, session expirée ou utilisateur non identifié')
+      return
+    }
+    
     setIsProcessing(true)
+    
+    try {
+      const newOrderId = `CMD-${Date.now()}`
+      
+      // 1. Sauvegarder dans localStorage d'abord
+      saveOrderAndClearCart('au_restaurant')
+      
+      // 2. Générer et sauvegarder le QR code
+      const qrData: QRCodeData = {
+        orderId: newOrderId,
+        orderNumber: newOrderId,
+        totalPrice: getTotalPrice(),
+        items: cart.map((it) => ({
+          name: it.name,
+          quantity: it.quantity,
+          price: parseInt(it.price.replace(/\D/g, '')) || 0
+        })),
+        date: new Date().toISOString(),
+        clientName: `${user.user_metadata?.full_name || 'Client'}`,
+        clientPhone: user.phone || 'N/A'
+      }
 
       try {
-        const payload = {
-          items: cart.map((it) => ({ name: it.name, quantity: it.quantity })),
-          commentaire: null,
-          livraison: false,
-          creneau_retrait: null,
-        }
-
-        const created = await createCommande(payload)
-
-        try {
-          const existingOrders = localStorage.getItem('tchopmate-orders')
-          console.log(existingOrders)
-          const orders = existingOrders ? JSON.parse(existingOrders) : []
-          orders.unshift(created)
-          localStorage.setItem('tchopmate-orders', JSON.stringify(orders))
-          localStorage.removeItem('tchopmate-cart')
-          setCart([])
-        } catch (e) {
-          console.warn('Erreur sauvegarde commande locale', e)
-        }
-
-        setIsProcessing(false)
-        alert('Commande enregistrée — paiement à effectuer au restaurant')
-        router.push('/commandes')
-      } catch (e: any) {
-        console.error('Exception création commande:', e)
-        alert('Erreur lors de la création de la commande : ' + (e?.message || 'Erreur inconnue'))
-        setIsProcessing(false)
+        await QRCodePersistenceService.generateAndSaveQRCode(newOrderId, qrData)
+        console.log('QR code généré et sauvegardé')
+      } catch (qrError) {
+        console.warn('Erreur génération QR code:', qrError)
+        // Ne pas bloquer si le QR code échoue
       }
+      
+      // 3. Créer la commande en BD via l'API
+      const payload = {
+        items: cart.map((it) => ({ name: it.name, quantity: it.quantity })),
+        commentaire: null,
+        livraison: false,
+        creneau_retrait: null,
+      }
+      
+      const res = await fetch('/api/commandes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`,
+        },
+        body: JSON.stringify(payload),
+      })
+      
+      const data = await res.json()
+      
+      if (!res.ok) {
+        console.error('Erreur création commande BD:', data)
+        alert('Commande sauvegardée localement mais erreur avec la BD: ' + (data?.error || 'Erreur inconnue'))
+        setIsProcessing(false)
+        // Rediriger quand même car la commande est en localStorage
+        setTimeout(() => {
+          router.push('/commandes')
+        }, 1000)
+        return
+      }
+      
+      setIsProcessing(false)
+      alert('Commande enregistrée — paiement à effectuer au restaurant')
+      router.push('/commandes')
+    } catch (e: any) {
+      console.error('Exception création commande:', e)
+      setIsProcessing(false)
+      alert('Erreur: ' + (e?.message || 'Erreur inconnue') + '\nLa commande est sauvegardée localement.')
+      setTimeout(() => {
+        router.push('/commandes')
+      }, 1000)
+    }
   }
 
   const handleCancelOrder = () => {
@@ -163,39 +305,8 @@ export default function PaymentPage() {
     )
   }
 
-  // Afficher un message si l'utilisateur n'est pas authentifié
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 py-10 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-md p-12 text-center">
-            <div className="bg-orange-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CreditCard className="h-10 w-10 text-orange-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Connexion requise</h2>
-            <p className="text-gray-600 mb-6">
-              Vous devez être connecté pour passer une commande. Connectez-vous pour continuer.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Button
-                onClick={() => router.push('/login?redirect=/commande/payment')}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-              >
-                Se connecter
-              </Button>
-              <Button
-                onClick={() => router.push('/menu')}
-                variant="outline"
-                className="border-orange-300 text-orange-600 hover:bg-orange-50"
-              >
-                Retour au menu
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // L'affichage de la page n'a lieu que si isLoading est faux et que l'utilisateur est présent.
+  // La redirection a lieu dans useEffect si !user.
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 py-10 px-4">
@@ -221,14 +332,14 @@ export default function PaymentPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Récapitulatif de la commande */}
+            {/* Récapitulatif de la commande (Reste inchangé) */}
             <div className="lg:col-span-2 bg-white rounded-2xl shadow-md p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                 <ShoppingCart className="h-6 w-6 text-orange-500" />
                 Récapitulatif de la commande
               </h2>
 
-              {/* Articles */}
+              {/* Articles (Reste inchangé) */}
               <div className="space-y-4 mb-6">
                 {cart.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-100">
@@ -254,7 +365,7 @@ export default function PaymentPage() {
                 ))}
               </div>
 
-              {/* Total */}
+              {/* Total (Reste inchangé) */}
               <div className="border-t-2 border-orange-200 pt-6 space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Articles</span>
@@ -271,7 +382,7 @@ export default function PaymentPage() {
               </div>
             </div>
 
-            {/* Options de paiement */}
+            {/* Options de paiement (Reste inchangé, sauf pour la logique de handlePayAtRestaurant) */}
             <div className="space-y-4">
               <div className="bg-white rounded-2xl shadow-md p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">

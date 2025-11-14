@@ -27,30 +27,31 @@ async function getAuthToken(): Promise<string | null> {
   }
 }
 
-export async function createCommande(payload: CreateCommandePayload) {
-  const token = await getAuthToken()
+export async function createCommande(payload: CreateCommandePayload, token: string) { 
   
+  // 1. La vérification est maintenant basée sur le token que nous passons.
   if (!token) {
     throw new Error('Vous devez être connecté pour passer une commande')
   }
-
+  
   const res = await fetch('/api/commandes', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      // 2. Utilisation du token reçu en argument.
+      'Authorization': `Bearer ${token}`, 
     },
     body: JSON.stringify(payload),
   })
 
   const data = await res.json()
+  console.log(data)
   if (!res.ok) {
     throw new Error(data?.error || 'Erreur création commande')
   }
 
   return data.commande
 }
-
 export async function getCommandes() {
   const token = await getAuthToken()
   
@@ -58,15 +59,24 @@ export async function getCommandes() {
     throw new Error('Vous devez être connecté pour voir vos commandes')
   }
 
-  const res = await fetch('/api/commandes', {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  })
-  
-  const data = await res.json()
-  if (!res.ok) {
-    throw new Error(data?.error || 'Erreur récupération commandes')
+  try {
+    const res = await fetch('/api/commandes', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+    
+    const data = await res.json()
+    console.log('Réponse API /api/commandes:', data)
+    
+    if (!res.ok) {
+      throw new Error(data?.error || 'Erreur récupération commandes')
+    }
+
+    return data.commandes || []
+  } catch (error) {
+    console.error('Erreur fetch commandes:', error)
+    throw error
   }
-  return data.commandes
 }

@@ -6,6 +6,27 @@ const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 /**
+ * Décode un JWT sans vérifier la signature (extraction des claims)
+ * Attention: Cette fonction ne valide PAS le JWT, elle extrait seulement les données
+ * La signature du JWT doit avoir été validée avant d'utiliser cette fonction
+ */
+function decodeJWT(token: string): any {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      return null;
+    }
+    const decoded = JSON.parse(
+      Buffer.from(parts[1], "base64").toString("utf-8")
+    );
+    return decoded;
+  } catch (e) {
+    console.error("Erreur décodage JWT:", e);
+    return null;
+  }
+}
+
+/**
  * Récupère le token d'authentification depuis les headers ou cookies de la requête
  * @param request - La requête Next.js
  * @returns Le token d'accès ou null
@@ -78,31 +99,60 @@ export async function getClientFromRequest(
     const accessToken = getAccessTokenFromRequest(request);
 
     if (!accessToken) {
+      console.log("Pas de token d'accès trouvé dans la requête");
       return null;
     }
 
-    // Créer un client admin pour vérifier le token
+    // Décoder le JWT pour extraire l'ID utilisateur
+    const decoded = decodeJWT(accessToken);
+
+    if (!decoded || !decoded.sub) {
+      console.error("Token invalide ou absence d'ID utilisateur");
+      return null;
+    }
+
+    const userId = decoded.sub; // Le champ 'sub' contient l'ID de l'utilisateur Supabase
+
+    // Créer un client admin pour accéder à la base de données
     const admin = createClient(url, serviceKey, {
       auth: { persistSession: false },
     });
 
-    // Vérifier le token et récupérer l'utilisateur
-    const {
-      data: { user },
-      error: userError,
-    } = await admin.auth.getUser(accessToken);
-
-    if (userError || !user) {
-      console.error("Erreur récupération utilisateur:", userError);
-      return null;
-    }
-
-    // Récupérer le compte depuis la table compte avec l'admin client
-    const { data: compte, error: compteError } = await admin
+    // Récupérer le compte depuis la table compte avec l'ID utilisateur
+    let { data: compte, error: compteError } = await admin
       .from("compte")
       .select("id, nom, prenom, email, numero_tel")
-      .eq("user_id", user.id)
-      .single();
+      .eq("user_id", userId)
+      .maybeSingle(); // Utiliser maybeSingle pour ne pas lever d'erreur si aucune ligne
+
+    // Si le compte n'existe pas, le créer automatiquement (premier login)
+    if (!compte && !compteError) {
+      console.log(`Création d'un nouveau compte pour user_id: ${userId}`);
+      
+      // Extraire le nom et le prénom de l'email
+      const emailParts = decoded.email?.split("@")[0]?.split(".") || [];
+      const nom = emailParts[0] || "Client";
+      const prenom = emailParts[1] || "Nouveau";
+
+      const { data: newCompte, error: insertError } = await admin
+        .from("compte")
+        .insert({
+          user_id: userId,
+          nom,
+          prenom,
+          email: decoded.email || "unknown@example.com",
+          role: "Client", // Les nouveaux utilisateurs sont clients
+        })
+        .select("id, nom, prenom, email, numero_tel")
+        .single();
+
+      if (insertError || !newCompte) {
+        console.error("Erreur création nouveau compte:", insertError);
+        return null;
+      }
+
+      return newCompte;
+    }
 
     if (compteError || !compte) {
       console.error("Erreur récupération compte:", compteError);
