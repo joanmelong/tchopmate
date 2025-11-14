@@ -6,6 +6,7 @@ import { Footer } from "@/components/ui/footer"
 import { FoodSlider } from "@/components/food-slider"
 import { Navbar } from "@/components/navbar"
 import { ScrollReveal } from "@/components/scroll-reveal"
+import Image from "next/image"
 
 export default function WelcomePage() {
   return (
@@ -201,31 +202,39 @@ export default function WelcomePage() {
               <ScrollReveal delay={200}>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="aspect-square rounded-2xl overflow-hidden bg-muted">
-                    <img
+                    <Image
                       src="/african-rice-dish-with-vegetables-and-meat.jpg"
                       alt="Plat de riz africain"
                       className="w-full h-full object-cover"
+                      width={400}
+                      height={400}
                     />
                   </div>
                   <div className="aspect-square rounded-2xl overflow-hidden bg-muted">
-                    <img
+                    <Image
                       src="/grilled-chicken-with-plantains-african-cuisine.jpg"
                       alt="Poulet grillé avec plantains"
                       className="w-full h-full object-cover"
+                      width={400}
+                      height={400}
                     />
                   </div>
                   <div className="aspect-square rounded-2xl overflow-hidden bg-muted">
-                    <img
+                    <Image
                       src="/african-stew-with-fufu-traditional-meal.jpg"
                       alt="Sauce avec fufu"
                       className="w-full h-full object-cover"
+                      width={400}
+                      height={400}
                     />
                   </div>
                   <div className="aspect-square rounded-2xl overflow-hidden bg-muted">
-                    <img
+                    <Image
                       src="/fresh-african-salad-with-vegetables.jpg"
                       alt="Salade fraîche"
                       className="w-full h-full object-cover"
+                      width={400}
+                      height={400}
                     />
                   </div>
                 </div>

@@ -13,7 +13,7 @@ import { Footer } from "@/components/ui/footer"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 export default function HomePage() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
 
@@ -22,7 +22,15 @@ export default function HomePage() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      setUser(user)
+      if (user) {
+        setUser({
+          id: user.id,
+          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          email: user.email || ''
+        })
+      } else {
+        setUser(null)
+      }
     }
 
     getUser()
@@ -30,7 +38,15 @@ export default function HomePage() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null)
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || ''
+        })
+      } else {
+        setUser(null)
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -59,16 +75,16 @@ export default function HomePage() {
               {user ? (
                 <div className="flex items-center space-x-2">
                   <Avatar className="h-8 w-8 cursor-pointer">
-                    <AvatarImage src={user.user_metadata?.avatar_url || "/student-avatar.png"} />
+                    <AvatarImage src="/student-avatar.png" />
                     <AvatarFallback className="bg-orange-100 text-orange-600">
-                      {user.user_metadata?.full_name?.charAt(0) || user.email?.charAt(0) || "U"}
+                      {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="text-sm font-medium text-gray-900">
-                      {user.user_metadata?.full_name || "Utilisateur"}
+                      {user.name || "Utilisateur"}
                     </p>
-                    <p className="text-xs text-gray-500">{user.user_metadata?.school || "Université de Yaoundé"}</p>
+                    <p className="text-xs text-gray-500">Université de Yaoundé</p>
                   </div>
                 </div>
               ) : (
@@ -91,17 +107,17 @@ export default function HomePage() {
                     {user ? (
                       <div className="flex items-center space-x-3 pb-4 border-b">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.user_metadata?.avatar_url || "/student-avatar.png"} />
+                          <AvatarImage src="/student-avatar.png" />
                           <AvatarFallback className="bg-orange-100 text-orange-600">
-                            {user.user_metadata?.full_name?.charAt(0) || user.email?.charAt(0) || "U"}
+                            {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="text-sm font-medium text-gray-900">
-                            {user.user_metadata?.full_name || "Utilisateur"}
+                            {user.name || "Utilisateur"}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {user.user_metadata?.school || "Université de Yaoundé"}
+                            Université de Yaoundé
                           </p>
                         </div>
                       </div>
@@ -135,7 +151,7 @@ export default function HomePage() {
                 <div className="flex items-center space-x-4 text-sm">
                   <div className="flex items-center space-x-1">
                     <Clock className="h-4 w-4" />
-                    <span>Ouvert jusqu'à 20h</span>
+                    <span>Ouvert jusqu&apos;à 20h</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <MapPin className="h-4 w-4" />
@@ -162,7 +178,7 @@ export default function HomePage() {
                 <Calendar className="h-6 w-6 text-orange-600" />
               </div>
               <CardTitle className="text-lg">Menu du jour</CardTitle>
-              <CardDescription>Consultez tous les plats, boissons et desserts disponibles aujourd'hui</CardDescription>
+              <CardDescription>Consultez tous les plats, boissons et desserts disponibles aujourd&apos;hui</CardDescription>
             </CardHeader>
           </Card>
 
@@ -172,7 +188,7 @@ export default function HomePage() {
                 <Clock className="h-6 w-6 text-orange-600" />
               </div>
               <CardTitle className="text-lg">Mes commandes</CardTitle>
-              <CardDescription>Suivez l'état de vos commandes en cours</CardDescription>
+              <CardDescription>Suivez l&apos;état de vos commandes en cours</CardDescription>
             </CardHeader>
           </Card>
 
