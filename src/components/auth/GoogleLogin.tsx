@@ -7,7 +7,7 @@ export function GoogleLogin() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: "http://localhost:3000/home", // après succès
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/home`, // après succès
         scopes: "openid email profile", // Demander les informations de profil
       },
     });
