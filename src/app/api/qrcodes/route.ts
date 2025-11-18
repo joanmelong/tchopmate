@@ -16,6 +16,14 @@ const admin = createClient(url ?? "", serviceKey ?? "", {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('POST /api/qrcodes appelé')
+    // Log Authorization header for debugging
+    try {
+      console.log('Authorization header:', request.headers.get('authorization'))
+    } catch (e) {
+      console.warn('Impossible de lire headers authorization', e)
+    }
+
     // Vérifier l'authentification
     const client = await getClientFromRequest(request)
 
@@ -36,24 +44,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('Body reçu POST /api/qrcodes:', { orderId, hasQrCodeDataUrl: !!qrCodeDataUrl, dataKeys: Object.keys(data || {}) })
+
     // Insérer ou mettre à jour le QR code en BD (table `qr_commandes`)
-    const { data: qrcode, error: insertError } = await admin
-      .from("qr_commandes")
-      .upsert({
-        order_id: orderId,
-        client_id: client.id,
-        qr_code_data_url: qrCodeDataUrl,
-        qr_code_data: data,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single()
+    console.log('Insertion/upsert QR code pour order:', orderId, 'client:', client.id)
+    const payload = {
+      order_id: orderId,
+      client_id: client.id,
+      qr_code_data_url: qrCodeDataUrl,
+      qr_code_data: data,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    // Essayer upsert d'abord (si constraint unique existe), sinon fallback sur insert
+    let qrcode: any = null
+    let insertError: any = null
+
+    try {
+      const upsertRes = await admin.from("qr_commandes").upsert(payload).select()
+      qrcode = upsertRes.data?.[0] ?? null
+      insertError = upsertRes.error
+    } catch (e) {
+      insertError = e
+    }
 
     if (insertError) {
-      console.error("Erreur insertion QR code:", insertError)
+      console.warn('Upsert QR code a échoué, tentative d\'insertion simple:', insertError)
+      try {
+        const insertRes = await admin.from('qr_commandes').insert(payload).select()
+        qrcode = insertRes.data?.[0] ?? null
+        insertError = insertRes.error
+      } catch (e) {
+        insertError = e
+      }
+    }
+
+    if (insertError) {
+      console.error('Erreur insertion QR code finale:', insertError)
       return NextResponse.json(
-        { error: insertError.message ?? "Erreur insertion QR code" },
+        { error: insertError?.message ?? String(insertError) ?? 'Erreur insertion QR code' },
         { status: 500 }
       )
     }

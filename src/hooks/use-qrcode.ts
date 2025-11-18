@@ -1,65 +1,51 @@
 import { useEffect, useState } from "react"
-import { QRCodePersistenceService, type StoredQRCode } from "@/services/qrcode-persistence"
+import { QRCodePersistenceService, type QRCodeData, type GeneratedQRCode } from "@/services/qrcode-persistence"
 
 export interface UseQRCodeState {
-  qrCode: StoredQRCode | null
+  qrCode: GeneratedQRCode | null
   isLoading: boolean
   error: string | null
   orderId: string
 }
 
 /**
- * Hook pour gérer la récupération et l'affichage des QR codes
- * Sépare complètement la logique métier de la vue
+ * Hook pour générer et afficher les QR codes à la demande
+ * Le QR code est généré à chaque appel du composant (pas de cache)
+ * Pas de persistance en BD ou localStorage
  */
-export function useQRCode(orderId: string | null): UseQRCodeState {
-  const [qrCode, setQrCode] = useState<StoredQRCode | null>(null)
+export function useQRCode(orderId: string | null, qrData: QRCodeData | null): UseQRCodeState {
+  const [qrCode, setQrCode] = useState<GeneratedQRCode | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!orderId) {
-      setError("ID de commande manquant")
+    if (!orderId || !qrData) {
+      setError("ID de commande ou données manquants")
       setIsLoading(false)
       return
     }
 
-    const fetchQRCode = async () => {
+    const generateQRCode = async () => {
       try {
-        console.log("Recherche du QR code pour commande:", orderId)
+        console.log("Génération du QR code pour commande:", orderId)
         
-        // 1. Chercher dans le localStorage d'abord (cache local)
-        let storedQR = QRCodePersistenceService.getFromLocalStorage(orderId)
+        // Générer le QR code à la demande (pas de cache)
+        const generatedQRCode = await QRCodePersistenceService.generateQRCode(orderId, qrData)
 
-        if (storedQR) {
-          console.log("QR code trouvé dans localStorage")
-          setQrCode(storedQR)
-          setIsLoading(false)
-          return
-        }
-
-        // 2. Si pas en cache, synchroniser depuis l'API/BD
-        console.log("QR code non trouvé en cache, synchronisation depuis API...")
-        const qrcodes = await QRCodePersistenceService.syncFromAPI()
-        const found = qrcodes.find(qr => qr.orderId === orderId)
-
-        if (found) {
-          console.log("QR code récupéré de l'API et mis en cache")
-          setQrCode(found)
-        } else {
-          console.warn("QR code non trouvé pour cette commande")
-          setError("QR code non trouvé pour cette commande")
-        }
+        console.log("QR code généré avec succès pour commande:", orderId)
+        setQrCode(generatedQRCode)
+        setError(null)
       } catch (e) {
-        console.error("Erreur lors de la récupération du QR code:", e)
-        setError("Impossible de charger le QR code")
+        console.error("Erreur lors de la génération du QR code:", e)
+        setError("Impossible de générer le QR code")
+        setQrCode(null)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchQRCode()
-  }, [orderId])
+    generateQRCode()
+  }, [orderId, qrData])
 
   return {
     qrCode,

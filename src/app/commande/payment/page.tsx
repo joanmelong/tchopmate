@@ -7,8 +7,6 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ShoppingCart, CreditCard, DollarSign, X } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { createCommande } from "@/services/commandes"
-import { QRCodePersistenceService, type QRCodeData } from "@/services/qrcode-persistence"
 import { supabase } from "@/lib/supabaseClient"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
@@ -215,30 +213,7 @@ useEffect(() => {
       // 1. Sauvegarder dans localStorage d'abord
       saveOrderAndClearCart('au_restaurant')
       
-      // 2. Générer et sauvegarder le QR code
-      const qrData: QRCodeData = {
-        orderId: newOrderId,
-        orderNumber: newOrderId,
-        totalPrice: getTotalPrice(),
-        items: cart.map((it) => ({
-          name: it.name,
-          quantity: it.quantity,
-          price: parseInt(it.price.replace(/\D/g, '')) || 0
-        })),
-        date: new Date().toISOString(),
-        clientName: `${user.user_metadata?.full_name || 'Client'}`,
-        clientPhone: user.phone || 'N/A'
-      }
-
-      try {
-        await QRCodePersistenceService.generateAndSaveQRCode(newOrderId, qrData)
-        console.log('QR code généré et sauvegardé')
-      } catch (qrError) {
-        console.warn('Erreur génération QR code:', qrError)
-        // Ne pas bloquer si le QR code échoue
-      }
-      
-      // 3. Créer la commande en BD via l'API
+      // 2. Créer la commande en BD via l'API
       const payload = {
         items: cart.map((it) => ({ name: it.name, quantity: it.quantity })),
         commentaire: null,
@@ -259,25 +234,22 @@ useEffect(() => {
       
       if (!res.ok) {
         console.error('Erreur création commande BD:', data)
-        alert('Commande sauvegardée localement mais erreur avec la BD: ' + (data?.error || 'Erreur inconnue'))
+        // Rediriger vers la page de succès quand même car la commande est en localStorage
         setIsProcessing(false)
-        // Rediriger quand même car la commande est en localStorage
-        setTimeout(() => {
-          router.push('/commandes')
-        }, 1000)
+        router.push(`/commande/success?orderId=${encodeURIComponent(newOrderId)}`)
         return
       }
       
       setIsProcessing(false)
-      alert('Commande enregistrée — paiement à effectuer au restaurant')
-      router.push('/commandes')
+      // Rediriger vers la page de succès
+      router.push(`/commande/success?orderId=${encodeURIComponent(newOrderId)}`)
     } catch (e: any) {
       console.error('Exception création commande:', e)
+      const newOrderId = `CMD-${Date.now()}`
       setIsProcessing(false)
-      alert('Erreur: ' + (e?.message || 'Erreur inconnue') + '\nLa commande est sauvegardée localement.')
-      setTimeout(() => {
-        router.push('/commandes')
-      }, 1000)
+      // Rediriger vers la page de succès même en cas d'erreur BD
+      // car la commande est sauvegardée localement
+      router.push(`/commande/success?orderId=${encodeURIComponent(newOrderId)}`)
     }
   }
 
@@ -300,6 +272,35 @@ useEffect(() => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Vérification de l'authentification...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Afficher un loader pendant le traitement de la commande
+  if (isProcessing) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 flex flex-col items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500 mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Création de votre commande...</h2>
+          <p className="text-gray-600">Veuillez patienter pendant que nous traitons votre demande.</p>
+          
+          {/* Étapes du traitement */}
+          <div className="mt-8 space-y-3 text-left max-w-sm mx-auto">
+            <div className="flex items-center gap-3 text-green-700">
+              <div className="flex-shrink-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm">✓</div>
+              <span>Panier enregistré</span>
+            </div>
+            <div className="flex items-center gap-3 text-orange-600 animate-pulse">
+              <div className="flex-shrink-0 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm">⏳</div>
+              <span>Création en base de données...</span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-500">
+              <div className="flex-shrink-0 w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-white text-sm">3</div>
+              <span>Redirection vers votre commande</span>
+            </div>
+          </div>
         </div>
       </div>
     )

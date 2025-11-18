@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import { Logo } from "@/components/logo"
 import Link from "next/link"
-import type { StoredQRCode } from "@/services/qrcode-persistence"
+import type { GeneratedQRCode } from "@/services/qrcode-persistence"
 
 interface QRCodeViewProps {
-  qrCode: StoredQRCode | null
+  qrCode: GeneratedQRCode | null
   isLoading: boolean
   error: string | null
   orderId: string
@@ -17,6 +17,7 @@ interface QRCodeViewProps {
 
 /**
  * Composant de présentation pour l'affichage du QR code
+ * Le QR code est généré à la demande, pas de persistance
  * Ne contient que de l'UI, la logique est externalisée
  */
 export function QRCodeView({
@@ -31,7 +32,7 @@ export function QRCodeView({
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-50 flex flex-col items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement du QR code...</p>
+          <p className="text-gray-600">Génération du QR code...</p>
         </div>
       </div>
     )
@@ -54,7 +55,7 @@ export function QRCodeView({
 
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Erreur</h2>
-          <p className="text-gray-600 mb-6">{error || "QR code non trouvé"}</p>
+          <p className="text-gray-600 mb-6">{error || "Impossible de générer le QR code"}</p>
           <Button onClick={onBack} className="bg-orange-500 hover:bg-orange-600 text-white">
             Retour aux commandes
           </Button>
@@ -151,13 +152,6 @@ export function QRCodeView({
           >
             Retour aux commandes
           </Button>
-        </div>
-
-        {/* Détails supplémentaires */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-xs text-gray-500">
-            Créé le: {new Date(qrCode.createdAt).toLocaleString("fr-FR")}
-          </p>
         </div>
       </div>
     </div>
