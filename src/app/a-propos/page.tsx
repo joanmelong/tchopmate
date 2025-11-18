@@ -24,12 +24,12 @@ export default function AboutPage() {
               <div className="bg-card rounded-2xl p-8 md:p-12 shadow-lg">
                 <h2 className="text-3xl font-bold mb-6">Notre Histoire</h2>
                 <p className="text-lg text-muted-foreground mb-4 leading-relaxed">
-                  TchopMate est née de la passion de rendre l' expérience culinaire universitaire plus accessible,
+                  TchopMate est née de la passion de rendre l&apos;expérience culinaire universitaire plus accessible,
                   pratique et agréable. Nous comprenons les défis auxquels font face les étudiants : emplois du temps
                   chargés, budgets limités et le désir de manger sainement.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  C'est pourquoi nous avons créé une plateforme qui connecte les étudiants avec des restaurants
+                  C&apos;est pourquoi nous avons créé une plateforme qui connecte les étudiants avec des restaurants
                   universitaires de qualité, offrant des menus variés à des prix adaptés au budget étudiant.
                 </p>
               </div>
@@ -51,7 +51,7 @@ export default function AboutPage() {
                   <Target className="w-8 h-8 text-primary" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">Mission</h3>
-                <p className="text-muted-foreground">Simplifier l'accès à une alimentation de qualité</p>
+                <p className="text-muted-foreground">Simplifier l&apos;accès à une alimentation de qualité</p>
               </div>
 
               <div className="bg-card rounded-xl p-6 text-center shadow-md hover:shadow-xl transition-shadow">

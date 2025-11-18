@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import Image from "next/image"
 
 const dishes = [
   {
@@ -38,7 +39,7 @@ export function PopularDishes() {
           >
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-orange-100">
-                <img src={dish.image || "/placeholder.svg"} alt={dish.name} className="w-full h-full object-cover" />
+                <Image src={dish.image || "/placeholder.svg"} alt={dish.name} className="w-full h-full object-cover" width={48} height={48} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-gray-900 truncate">{dish.name}</p>

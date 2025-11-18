@@ -8,7 +8,7 @@ import Image from "next/image"
 interface MenuViewDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  menu?: any
+  menu: { id: string; nom: string; description?: string; prix: number; image_url?: string; disponible: boolean }
 }
 
 const AVAILABLE_DISHES = [
@@ -55,10 +55,10 @@ const AVAILABLE_DISHES = [
 ]
 
 export function MenuViewDialog({ open, onOpenChange, menu }: MenuViewDialogProps) {
-  const menuDishes = menu?.dishIds ? AVAILABLE_DISHES.filter((d) => menu.dishIds.includes(d.id)) : []
+  const menuDishes: typeof AVAILABLE_DISHES = []
 
-  const getTypeLabel = (type) => {
-    const labels = {
+  const getTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
       spicy: "Épicé",
       vegetarian: "Végé",
       none: "Boisson",
@@ -66,8 +66,8 @@ export function MenuViewDialog({ open, onOpenChange, menu }: MenuViewDialogProps
     return labels[type] || type
   }
 
-  const getTypeColor = (type) => {
-    const colors = {
+  const getTypeColor = (type: string) => {
+    const colors: Record<string, string> = {
       spicy: "bg-red-100 text-red-700",
       vegetarian: "bg-green-100 text-green-700",
       none: "bg-blue-100 text-blue-700",
@@ -79,9 +79,9 @@ export function MenuViewDialog({ open, onOpenChange, menu }: MenuViewDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">{menu?.name}</DialogTitle>
+          <DialogTitle className="text-2xl">{menu?.nom}</DialogTitle>
           <DialogDescription>
-            {menu?.date ? `Date: ${new Date(menu.date).toLocaleDateString("fr-FR")}` : "Menu par défaut"}
+            Menu par défaut
           </DialogDescription>
         </DialogHeader>
 

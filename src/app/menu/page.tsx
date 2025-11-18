@@ -1,7 +1,26 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
+
+// Interface for the plat data structure
+interface PlatData {
+  id: string
+  nom: string
+  description: string | null
+  prix: number
+  image_url: string | null
+  categorie: string
+  disponible: boolean
+  temps_preparation: number | null
+}
+
+// Interface for menu_plat that can handle both array and single object
+interface MenuPlatWithDish {
+  id: string
+  quantite: number
+  plat: PlatData | PlatData[]
+}
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -33,11 +52,11 @@ import { supabase } from "@/lib/supabaseClient"
 import type { User } from "@supabase/supabase-js"
 
 type CartItem = {
-  id: number
+  id: string
   name: string
-  price: string
+  price: number
   quantity: number
-  image: string
+  image?: string
 }
 
 export default function MenuPage() {
@@ -49,7 +68,7 @@ export default function MenuPage() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [cartAnimation, setCartAnimation] = useState(false)
-  const [favorites, setFavorites] = useState<number[]>([])
+  const [favorites, setFavorites] = useState<string[]>([])
 
   useEffect(() => {
     const getUser = async () => {
@@ -81,7 +100,7 @@ export default function MenuPage() {
     localStorage.setItem("tchopmate-favorites", JSON.stringify(favorites))
   }, [favorites])
 
-  const toggleFavorite = (itemId: number) => {
+  const toggleFavorite = (itemId: string) => {
     setFavorites((prev) => {
       if (prev.includes(itemId)) {
         return prev.filter((id) => id !== itemId)
@@ -92,9 +111,22 @@ export default function MenuPage() {
   }
 
   // Charger les plats depuis les menus activés
-  const [menuItems, setMenuItems] = useState<any[]>([])
+  const [menuItems, setMenuItems] = useState<Array<{ 
+    id: string; 
+    name: string; 
+    price: number; 
+    category: string; 
+    image?: string; 
+    description?: string;
+    rating: number;
+    available: boolean;
+    spicy: boolean;
+    vegetarian: boolean;
+    preparationTime: string;
+    menuName: string;
+  }>>([])
   const [loading, setLoading] = useState(true)
-  const [categories, setCategories] = useState<Array<{ id: string; name: string; icon: any }>>([
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; icon: React.ComponentType<{ className?: string }> }>>([
     { id: "all", name: "Tout", icon: ChefHat },
   ])
 
@@ -133,25 +165,44 @@ export default function MenuPage() {
       if (error) throw error
 
       // Transformer les données pour correspondre au format attendu
-      const dishes: any[] = []
+      const dishes: Array<{ 
+        id: string; 
+        name: string; 
+        price: number; 
+        category: string; 
+        image?: string; 
+        description?: string;
+        rating: number;
+        available: boolean;
+        spicy: boolean;
+        vegetarian: boolean;
+        preparationTime: string;
+        menuName: string;
+      }> = []
       activeMenus?.forEach((menu) => {
-        menu.menu_plat?.forEach((mp: any) => {
-          if (mp.plat && mp.plat.disponible) {
-            dishes.push({
-              id: mp.plat.id,
-              name: mp.plat.nom,
-              description: mp.plat.description || '',
-              price: `${mp.plat.prix} FCFA`,
-              rating: 4.5,
-              image: mp.plat.image_url || null,
-              category: mp.plat.categorie?.toLowerCase() || 'plats',
-              available: mp.plat.disponible,
-              preparationTime: mp.plat.temps_preparation ? `${mp.plat.temps_preparation} min` : '20 min',
-              spicy: false,
-              vegetarian: false,
-              menuName: menu.nom,
-            })
-          }
+        menu.menu_plat?.forEach((mp: MenuPlatWithDish) => {
+          // Handle both array and single object cases for plat
+          // This ensures compatibility between dev and build environments
+          const platItems: PlatData[] = Array.isArray(mp.plat) ? mp.plat : [mp.plat]
+          
+          platItems?.forEach((platData: PlatData) => {
+            if (platData && platData.disponible) {
+              dishes.push({
+                id: platData.id,
+                name: platData.nom,
+                description: platData.description || '',
+                price: platData.prix,
+                image: platData.image_url || undefined,
+                category: platData.categorie?.toLowerCase() || 'plats',
+                rating: 4.5,
+                available: platData.disponible,
+                spicy: false,
+                vegetarian: false,
+                preparationTime: platData.temps_preparation ? `${platData.temps_preparation} min` : '20 min',
+                menuName: menu.nom,
+              })
+            }
+          })
         })
       })
 
@@ -161,7 +212,7 @@ export default function MenuPage() {
       const uniqueCategories = Array.from(new Set(dishes.map(d => d.category).filter(Boolean)))
       
       // Mapper les catégories avec des icônes appropriées
-      const categoryIcons: Record<string, any> = {
+      const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
         'plats': ChefHat,
         'plat': ChefHat,
         'boissons': Coffee,
@@ -189,126 +240,6 @@ export default function MenuPage() {
     }
   }
 
-  const oldMenuItems = [
-    {
-      id: 1,
-      name: "Ndolé aux crevettes",
-      description: "Plat traditionnel camerounais avec des légumes verts et crevettes",
-      price: "2500 FCFA",
-      rating: 4.8,
-      image: "/ndole-camerounais-plat-traditionnel.jpg",
-      category: "plats",
-      available: true,
-      preparationTime: "25 min",
-      spicy: true,
-      vegetarian: false,
-    },
-    {
-      id: 2,
-      name: "Poulet DG",
-      description: "Poulet sauté aux légumes et plantains, spécialité locale",
-      price: "3000 FCFA",
-      rating: 4.9,
-      image: "/poulet-dg-cameroun-plantain.jpg",
-      category: "plats",
-      available: true,
-      preparationTime: "30 min",
-      spicy: false,
-      vegetarian: false,
-    },
-    {
-      id: 3,
-      name: "Riz sauté aux légumes",
-      description: "Riz parfumé sauté avec des légumes frais de saison",
-      price: "1800 FCFA",
-      rating: 4.5,
-      image: "/riz-saut--l-gumes.jpg",
-      category: "plats",
-      available: true,
-      preparationTime: "20 min",
-      spicy: false,
-      vegetarian: true,
-    },
-    {
-      id: 4,
-      name: "Jus de bissap",
-      description: "Boisson rafraîchissante à base d'hibiscus",
-      price: "500 FCFA",
-      rating: 4.6,
-      image: "/jus-bissap-hibiscus-rouge.jpg",
-      category: "boissons",
-      available: true,
-      preparationTime: "5 min",
-      spicy: false,
-      vegetarian: true,
-    },
-    {
-      id: 5,
-      name: "Jus d'orange frais",
-      description: "Jus d'orange pressé à la minute",
-      price: "600 FCFA",
-      rating: 4.7,
-      image: "/jus-orange-frais.jpg",
-      category: "boissons",
-      available: true,
-      preparationTime: "3 min",
-      spicy: false,
-      vegetarian: true,
-    },
-    {
-      id: 6,
-      name: "Eau minérale",
-      description: "Eau minérale naturelle 50cl",
-      price: "300 FCFA",
-      rating: 4.0,
-      image: "/bouteille-eau-min-rale.jpg",
-      category: "boissons",
-      available: true,
-      preparationTime: "1 min",
-      spicy: false,
-      vegetarian: true,
-    },
-    {
-      id: 7,
-      name: "Beignets haricots",
-      description: "Beignets croustillants aux haricots, parfait pour le petit-déjeuner",
-      price: "1000 FCFA",
-      rating: 4.7,
-      image: "/beignets-haricots-cameroun-frits.jpg",
-      category: "desserts",
-      available: false,
-      preparationTime: "20 min",
-      spicy: false,
-      vegetarian: true,
-    },
-    {
-      id: 8,
-      name: "Banane plantain grillée",
-      description: "Banane plantain grillée avec un soupçon de cannelle",
-      price: "800 FCFA",
-      rating: 4.4,
-      image: "/banane-plantain-grill-e.jpg",
-      category: "desserts",
-      available: true,
-      preparationTime: "15 min",
-      spicy: false,
-      vegetarian: true,
-    },
-    {
-      id: 9,
-      name: "Fruit de saison",
-      description: "Sélection de fruits frais de saison",
-      price: "700 FCFA",
-      rating: 4.3,
-      image: "/fruits-tropicaux-frais.jpg",
-      category: "desserts",
-      available: true,
-      preparationTime: "2 min",
-      spicy: false,
-      vegetarian: true,
-    },
-  ]
-
   const addToCart = (item: (typeof menuItems)[0]) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === item.id)
@@ -324,7 +255,7 @@ export default function MenuPage() {
     setTimeout(() => setCartAnimation(false), 600)
   }
 
-  const updateQuantity = (id: number, change: number) => {
+  const updateQuantity = (id: string, change: number) => {
     setCart((prevCart) => {
       return prevCart
         .map((item) => {
@@ -338,7 +269,7 @@ export default function MenuPage() {
     })
   }
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== id))
   }
 
@@ -348,7 +279,7 @@ export default function MenuPage() {
 
   const getTotalPrice = () => {
     return cart.reduce((total, item) => {
-      const price = Number.parseInt(item.price.replace(/\D/g, ""))
+      const price = item.price
       return total + price * item.quantity
     }, 0)
   }
@@ -357,7 +288,7 @@ export default function MenuPage() {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory
     const matchesSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase())
+      item.description?.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesCategory && matchesSearch
   })
 
@@ -533,7 +464,7 @@ export default function MenuPage() {
               }).replace(/^\w/, (c) => c.toUpperCase())}
             </h2>
             <p className="text-sm sm:text-base text-orange-100">
-              Découvrez tous nos plats, boissons et desserts disponibles aujourd'hui
+              Découvrez tous nos plats, boissons et desserts disponibles aujourd&apos;hui
             </p>
           </div>
         </div>
@@ -602,13 +533,15 @@ export default function MenuPage() {
             <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
               <div className="relative h-48 bg-gray-100">
                 {item.image ? (
-                  <img 
+                  <Image 
                     src={item.image} 
                     alt={item.name} 
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16" fill="%239ca3af"%3EImage non disponible%3C/text%3E%3C/svg%3E';
                     }}
+                    width={600}
+                    height={128}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -653,7 +586,7 @@ export default function MenuPage() {
 
               <CardContent>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-base sm:text-lg font-bold text-orange-600">{item.price}</span>
+                  <span className="text-base sm:text-lg font-bold text-orange-600">{item.price} FCFA</span>
                   <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-500">
                     <Clock className="h-4 w-4" />
                     <span>{item.preparationTime}</span>
@@ -731,7 +664,7 @@ export default function MenuPage() {
                         {item.price} × {item.quantity}
                       </p>
                       <p className="text-sm sm:text-base text-orange-600 font-bold">
-                        {Number.parseInt(item.price.replace(/\D/g, "")) * item.quantity} FCFA
+                        {item.price * item.quantity} FCFA
                       </p>
                     </div>
 
@@ -764,7 +697,7 @@ export default function MenuPage() {
                         onClick={() => removeFromCart(item.id)}
                         className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7 sm:h-8 sm:w-8 p-0"
                       >
-                        <Trash2 className="h-4 w-4 sm:h-5 w-5" />
+                        <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Button>
                     </div>
                   </div>

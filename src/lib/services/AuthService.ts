@@ -8,7 +8,7 @@
  */
 
 import { supabase } from "@/lib/supabaseClient";
-import { User } from "@supabase/supabase-js";
+
 
 export interface UserProfile {
   id: number;

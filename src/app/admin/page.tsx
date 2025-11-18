@@ -21,7 +21,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { AdminDebugger } from "@/components/debug/AdminDebugger";
+
 
 interface Gerant {
   id: number;

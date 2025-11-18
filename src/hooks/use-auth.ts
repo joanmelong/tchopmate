@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getDI } from '@/lib/di';
 import { AuthCredentials } from '@/core/interfaces/IAuthRepository';
-import { User } from '@/core/entities/User';
+
 
 interface UseAuthReturn {
   login: (credentials: AuthCredentials) => Promise<void>;

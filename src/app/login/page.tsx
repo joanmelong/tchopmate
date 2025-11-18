@@ -46,7 +46,7 @@ export default function LoginPage() {
     if (!validateForm()) return;
 
     setIsLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: formData.emailOrPhone,
       password: formData.password,
     });
@@ -165,7 +165,7 @@ export default function LoginPage() {
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Pas encore de compte ? </span>
               <Link href="/register" className="text-primary hover:underline">
-                S'inscrire
+                S&apos;inscrire
               </Link>
             </div>
           </CardContent>

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Logo } from '../logo'
 
-function Footer({ className, ...props }: React.ComponentProps<'div'>) {
+export function Footer() {
     return(
         <footer className="bg-black text-white mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -36,7 +36,7 @@ function Footer({ className, ...props }: React.ComponentProps<'div'>) {
                 </li>
                 <li>
                   <a href="#" className="hover:text-orange-400 transition-colors">
-                    Conditions d'utilisation
+                    Conditions d&apos;utilisation
                   </a>
                 </li>
               </ul>
@@ -59,8 +59,4 @@ function Footer({ className, ...props }: React.ComponentProps<'div'>) {
         </div>
       </footer>
     )
-}
-
-export {
-    Footer
 }
