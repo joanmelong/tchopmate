@@ -179,6 +179,11 @@ export class Order {
     return this.props.status === OrderStatus.ANNULEE;
   }
 
+  setQRCode(qrCode: string): void {
+    this.props.qrCode = qrCode;
+    this.props.updatedAt = new Date();
+  }
+
   private validateProps(props: OrderProps): void {
     if (!props.items || props.items.length === 0) {
       throw new Error('Une commande doit contenir au moins un plat');

@@ -58,6 +58,11 @@ export interface IOrderRepository {
   cancel(id: number): Promise<void>;
 
   /**
+   * Mettre à jour le QR code d'une commande
+   */
+  updateQRCode(id: number, qrCode: string): Promise<void>;
+
+  /**
    * Récupérer les statistiques de commandes pour un restaurant
    */
   getStats(restaurantId: string, dateFrom?: Date, dateTo?: Date): Promise<{

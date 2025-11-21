@@ -31,7 +31,7 @@ import { supabase } from "@/lib/supabaseClient"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { QRCodeButton } from "@/components/ui/qr-code-button"
 import { QRCodeModal } from "@/components/ui/qr-code-modal"
-import { useOrderQRCode } from "@/hooks/use-order-qrcode"
+import { useOrderQRCodeSimple } from "@/hooks/useOrderQRCodeSimple"
 import { Order as OrderEntity, OrderItem as OrderItemEntity, OrderStatus } from "@/core/entities/Order"
 
 type OrderItem = {
@@ -61,7 +61,7 @@ export default function CommandesPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isQRModalOpen, setIsQRModalOpen] = useState(false)
   const [currentOrderForQR, setCurrentOrderForQR] = useState<Order | null>(null)
-  const { qrCode, isGenerating, generateQRCode, resetQRCode } = useOrderQRCode()
+  const { qrCode, isGenerating, generateQRCode, resetQRCode } = useOrderQRCodeSimple()
 
   useEffect(() => {
     const getUser = async () => {
