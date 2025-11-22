@@ -32,16 +32,10 @@ import {
 } from "recharts"
 
 export default function Statistiques() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  // const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [selectedPeriod, setSelectedPeriod] = useState("week")
 
-  const navigationLinks = [
-    { href: "/resto/admin", label: "Tableau de bord", icon: LayoutDashboard },
-    { href: "/resto/admin/plats", label: "Gestion des plats", icon: UtensilsCrossed },
-    { href: "/resto/admin/commandes", label: "Gestion des commandes", icon: ShoppingBag },
-    { href: "/resto/admin/clients", label: "Gestion des clients", icon: Users },
-    { href: "/resto/admin/statistiques", label: "Statistiques", icon: BarChart3 },
-  ]
+
 
   const revenueData = [
     { day: "Lun", revenue: 45000 },
@@ -111,7 +105,7 @@ export default function Statistiques() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="today">Aujourd'hui</SelectItem>
+                <SelectItem value="today">Aujourd&apos;hui</SelectItem>
                 <SelectItem value="week">Cette semaine</SelectItem>
                 <SelectItem value="month">Ce mois</SelectItem>
                 <SelectItem value="year">Cette année</SelectItem>

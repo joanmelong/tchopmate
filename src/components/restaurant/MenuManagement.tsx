@@ -9,6 +9,7 @@ import { Plus, Edit, Trash2, List, UtensilsCrossed } from 'lucide-react';
 import { MenuForm } from './MenuForm';
 import { MenuCompositionManager } from './MenuCompositionManager';
 import { useToast } from '@/components/ui/use-toast';
+import Image from 'next/image';
 
 interface MenuManagementProps {
   restaurantId: string; // UUID du restaurant
@@ -149,10 +150,12 @@ export function MenuManagement({ restaurantId }: MenuManagementProps) {
             </CardHeader>
             <CardContent>
               {menu.image_url && (
-                <img
+                <Image
                   src={menu.image_url}
                   alt={menu.nom}
                   className="w-full h-32 object-cover rounded mb-2"
+                  width={600}
+                  height={128}
                 />
               )}
               <p className="text-sm text-gray-600 mb-2">{menu.description}</p>

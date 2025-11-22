@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import { DishForm } from './DishForm';
 import { useToast } from '@/components/ui/use-toast';
+import Image from 'next/image';
 
 interface DishManagementProps {
   restaurantId: string; // UUID dans PostgreSQL
@@ -174,10 +175,12 @@ export function DishManagement({ restaurantId }: DishManagementProps) {
             </CardHeader>
             <CardContent>
               {dish.image_url && (
-                <img
+                <Image
                   src={dish.image_url}
                   alt={dish.nom}
                   className="w-full h-32 object-cover rounded mb-2"
+                  width={600}
+                  height={128}
                 />
               )}
               <p className="text-sm text-gray-600 mb-2">{dish.description}</p>

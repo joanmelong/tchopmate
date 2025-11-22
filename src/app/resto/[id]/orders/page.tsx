@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function OrdersPage() {
   const [showDetail, setShowDetail] = useState(false)
-  const [selectedOrder, setSelectedOrder] = useState<any>(null)
+  const [selectedOrder, setSelectedOrder] = useState<{ id: string; customer: string; items: Array<{ name: string; qty: number; price: string }>; total: string; status: string; time: string } | undefined>(undefined)
   const [orders, setOrders] = useState([
     {
       id: "#CMD001",
@@ -59,7 +59,7 @@ export default function OrdersPage() {
     setOrders(orders.map((o) => (o.id === orderId ? { ...o, status: "en cours" } : o)))
   }
 
-  const OrderRow = ({ order }: { order: any }) => (
+  const OrderRow = ({ order }: { order: { id: string; customer: string; items: Array<{ name: string; qty: number; price: string }>; total: string; status: string; time: string } }) => (
     <div className="border border-orange-100 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
       <div className="flex items-center justify-between mb-3">
         <div>

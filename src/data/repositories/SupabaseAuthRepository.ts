@@ -165,20 +165,22 @@ export class SupabaseAuthRepository implements IAuthRepository {
     });
 
     // Récupérer ou créer le profil utilisateur
-    let { data: compteData, error: compteError } = await this.supabase
+    const { data: compteData, error: compteError } = await this.supabase
       .from('compte')
       .select('*')
       .eq('user_id', session.user.id)
       .single<CompteDTO>();
+    
+    let finalCompteData = compteData;
 
     console.log('[SupabaseAuthRepository] Recherche compte par user_id:', {
       userId: session.user.id,
-      found: !!compteData,
+      found: !!finalCompteData,
       error: compteError?.message,
     });
 
     // Si pas trouvé par user_id, chercher par email
-    if (!compteData) {
+    if (!finalCompteData) {
       const { data: compteByEmail } = await this.supabase
         .from('compte')
         .select('*')
@@ -201,13 +203,13 @@ export class SupabaseAuthRepository implements IAuthRepository {
 
         if (!updateError && updatedCompte) {
           console.log('[SupabaseAuthRepository] Compte mis à jour avec user_id');
-          compteData = updatedCompte;
+          finalCompteData = updatedCompte;
         }
       }
     }
 
     // Si le compte n'existe toujours pas, le créer
-    if (!compteData) {
+    if (!finalCompteData) {
       console.log('[SupabaseAuthRepository] Création nouveau compte');
       const { data: newCompte, error: createError } = await this.supabase
         .from('compte')
@@ -225,10 +227,10 @@ export class SupabaseAuthRepository implements IAuthRepository {
         throw new Error('Erreur lors de la création du profil');
       }
 
-      compteData = newCompte;
+      finalCompteData = newCompte;
     }
 
-    const user = UserMapper.toDomain(compteData);
+    const user = UserMapper.toDomain(finalCompteData);
 
     return {
       user,

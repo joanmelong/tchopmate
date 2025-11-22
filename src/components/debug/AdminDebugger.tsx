@@ -1,10 +1,42 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from '@/lib/supabaseClient';
+
+interface SessionType {
+  user?: {
+    id?: string;
+    email?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface CompteType {
+  role?: string;
+  [key: string]: unknown;
+}
+
+interface AllAdminsType {
+  length?: number;
+  [key: string]: unknown;
+}
+
+interface ErrorType {
+  message?: string;
+  [key: string]: unknown;
+}
 
 export function AdminDebugger() {
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<{ 
+    session: SessionType | null; 
+    sessionError: ErrorType | null; 
+    compte: CompteType | null; 
+    compteError: ErrorType | null; 
+    allAdmins: AllAdminsType | null; 
+    allAdminsError: ErrorType | null; 
+    error?: string 
+  } | null>(null);
 
   useEffect(() => {
     const runDebug = async () => {
@@ -37,12 +69,12 @@ export function AdminDebugger() {
           console.log("Erreur tous admins:", allAdminsError);
 
           setDebugInfo({
-            session: session,
-            sessionError: sessionError,
-            compte: compteData,
-            compteError: compteError,
-            allAdmins: allAdmins,
-            allAdminsError: allAdminsError
+            session: session as unknown as SessionType,
+            sessionError: sessionError as unknown as ErrorType,
+            compte: compteData as CompteType,
+            compteError: compteError as unknown as ErrorType,
+            allAdmins: allAdmins as unknown as AllAdminsType,
+            allAdminsError: allAdminsError as unknown as ErrorType
           });
         }
         

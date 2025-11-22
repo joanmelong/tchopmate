@@ -46,7 +46,7 @@ interface Dish {
 }
 
 export default function GestionPlats() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  // const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -103,13 +103,7 @@ export default function GestionPlats() {
     isSpicy: false,
   })
 
-  const navigationLinks = [
-    { href: "/resto/admin", label: "Tableau de bord", icon: LayoutDashboard },
-    { href: "/resto/admin/plats", label: "Gestion des plats", icon: UtensilsCrossed },
-    { href: "/resto/admin/commandes", label: "Gestion des commandes", icon: ShoppingBag },
-    { href: "/resto/admin/clients", label: "Gestion des clients", icon: Users },
-    { href: "/resto/admin/statistiques", label: "Statistiques", icon: BarChart3 },
-  ]
+
 
   const filteredDishes = dishes.filter((dish) => {
     const matchesSearch = dish.name.toLowerCase().includes(searchQuery.toLowerCase())

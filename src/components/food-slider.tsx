@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 interface Slide {
   image: string
@@ -51,10 +52,12 @@ export function FoodSlider() {
   return (
     <div className="relative w-full max-w-5xl mx-auto">
       <div className="relative aspect-[4/3] md:aspect-[16/9] rounded-2xl overflow-hidden bg-muted">
-        <img
+        <Image
           src={slides[currentSlide].image || "/placeholder.svg"}
           alt={slides[currentSlide].title}
           className="w-full h-full object-cover"
+          width={600}
+          height={450}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">

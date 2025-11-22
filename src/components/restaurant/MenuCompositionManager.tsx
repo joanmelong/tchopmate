@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MenuWithDishesDTO, MenuPlatDTO } from '@/core/entities/MenuComposition';
+
 import { DishDTO } from '@/core/entities/Dish';
+import { MenuWithDishesDTO } from '@/core/entities/MenuComposition';
 import { menuCompositionService } from '@/services/MenuCompositionService';
 import { dishService } from '@/services/DishService';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Trash2, Plus, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import Image from 'next/image';
 
 interface MenuCompositionManagerProps {
   menuId: string;
@@ -161,10 +163,12 @@ export function MenuCompositionManager({ menuId, restaurantId, onBack }: MenuCom
       </div>
 
       {menuWithDishes.image_url && (
-        <img
+        <Image
           src={menuWithDishes.image_url}
           alt={menuWithDishes.nom}
           className="w-full h-48 object-cover rounded-lg"
+          width={600}
+          height={192}
         />
       )}
 
@@ -189,10 +193,12 @@ export function MenuCompositionManager({ menuId, restaurantId, onBack }: MenuCom
             </CardHeader>
             <CardContent>
               {menuPlat.plat?.image_url && (
-                <img
+                <Image
                   src={menuPlat.plat.image_url}
                   alt={menuPlat.plat.nom}
                   className="w-full h-32 object-cover rounded mb-2"
+                  width={600}
+                  height={128}
                 />
               )}
               <p className="text-sm text-gray-600 mb-2">{menuPlat.plat?.description}</p>
@@ -259,9 +265,11 @@ export function MenuCompositionManager({ menuId, restaurantId, onBack }: MenuCom
                     </CardHeader>
                     <CardContent>
                       {dish.image_url && (
-                        <img
+                        <Image
                           src={dish.image_url}
                           alt={dish.nom}
+                          width={600}
+                          height={128}
                           className="w-full h-24 object-cover rounded mb-2"
                         />
                       )}
