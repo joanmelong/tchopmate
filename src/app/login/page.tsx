@@ -56,7 +56,15 @@ export default function LoginPage() {
       console.error("Erreur login:", error);
       setErrors({ general: "Email ou mot de passe incorrect" });
     } else {
-      router.push("/home");
+      // Vérifier s'il y a un paramètre redirect dans l'URL
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirect = searchParams.get('redirect');
+      
+      if (redirect) {
+        router.push(redirect);
+      } else {
+        router.push("/home");
+      }
     }
   };
 
