@@ -96,11 +96,33 @@ export default function MenuPage() {
     }
   }, [])
 
+  // Charger le panier depuis localStorage au montage
+  useEffect(() => {
+    const savedCart = localStorage.getItem("tchopmate-cart")
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart))
+      } catch (e) {
+        // ignore malformed
+        console.warn("Erreur lecture panier depuis localStorage", e)
+      }
+    }
+  }, [])
+
   useEffect(() => {
     localStorage.setItem("tchopmate-favorites", JSON.stringify(favorites))
   }, [favorites])
 
-  const toggleFavorite = (itemId: string) => {
+  // Sauvegarder le panier à chaque modification pour réutilisation entre pages
+  useEffect(() => {
+    try {
+      localStorage.setItem("tchopmate-cart", JSON.stringify(cart))
+    } catch (e) {
+      console.warn("Erreur sauvegarde panier", e)
+    }
+  }, [cart])
+
+  const toggleFavorite = (itemId: number) => {
     setFavorites((prev) => {
       if (prev.includes(itemId)) {
         return prev.filter((id) => id !== itemId)
@@ -728,7 +750,7 @@ export default function MenuPage() {
                 <Button
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
                   onClick={() => {
-                    alert("Commande confirmée!")
+                    router.push('/commande/payment')
                   }}
                 >
                   Confirmer la commande
