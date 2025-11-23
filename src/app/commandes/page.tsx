@@ -32,7 +32,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { QRCodeButton } from "@/components/ui/qr-code-button"
 import { QRCodeModal } from "@/components/ui/qr-code-modal"
 import { useOrderQRCode } from "@/hooks/use-order-qrcode"
-import { Order as OrderEntity, OrderItem as OrderItemEntity, OrderStatus } from "@/core/entities/Order"
+
 
 type OrderItem = {
   id: number | string
