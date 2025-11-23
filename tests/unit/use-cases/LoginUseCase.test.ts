@@ -3,11 +3,16 @@
  */
 
 import { LoginUseCase } from '@/core/use-cases/auth/LoginUseCase';
-import { IAuthRepository, AuthCredentials, AuthSession } from '@/core/interfaces/IAuthRepository';
+import { IAuthRepository, AuthCredentials, AuthSession, RegisterData, GoogleLoginOptions } from '@/core/interfaces/IAuthRepository';
 import { User, UserRole } from '@/core/entities/User';
 
-// Mock du repository
-class MockAuthRepository implements IAuthRepository {
+
+
+export class MockAuthRepository implements IAuthRepository {
+  // Pour inspecter ce que les tests ont fait
+  public emailsSent: string[] = [];
+  public sessions: AuthSession | null = null;
+
   async login(credentials: AuthCredentials): Promise<AuthSession> {
     if (credentials.email === 'test@example.com' && credentials.password === 'password123') {
       const user = new User({
@@ -18,30 +23,56 @@ class MockAuthRepository implements IAuthRepository {
         role: UserRole.STUDENT,
       });
 
-      return {
-        user,
-        accessToken: 'fake-token',
-      };
+      const session = { user, accessToken: 'fake-token' };
+      this.sessions = session;
+      return session;
     }
 
     throw new Error('Invalid login credentials');
   }
 
-  async register(): Promise<User> {
-    throw new Error('Not implemented');
+  async register(data: RegisterData): Promise<User> {
+    return new User({
+      id: 999,
+      ...data,
+      role: UserRole.STUDENT
+    });
   }
 
-  async logout(): Promise<void> {}
-  
+  async logout(): Promise<void> {
+    this.sessions = null;
+  }
+
   async getCurrentSession(): Promise<AuthSession | null> {
-    return null;
+    return this.sessions;
   }
 
   async isAuthenticated(): Promise<boolean> {
-    return false;
+    return this.sessions !== null;
   }
 
-  async resetPassword(): Promise<void> {}
+  async resetPassword(email: string): Promise<void> {
+    this.emailsSent.push(email);
+  }
+
+  async initiateGoogleLogin(options: GoogleLoginOptions): Promise<string> {
+    return "https://mock.google.oauth/redirect";
+  }
+
+  async handleOAuthCallback(): Promise<AuthSession | null> {
+    const user = new User({
+      id: 2,
+      nom: 'OAuth',
+      prenom: 'User',
+      email: 'oauth@test.com',
+      role: UserRole.STUDENT,
+    });
+
+    return {
+      user,
+      accessToken: 'mock-oauth-token'
+    };
+  }
 }
 
 describe('LoginUseCase', () => {

@@ -1,56 +1,12 @@
-/**
- * Interface de repository pour les utilisateurs
- */
+// src/core/interfaces/IUserRepository.ts
 
-import { User, UserRole } from '../entities/User';
-
-export interface UpdateUserData {
-  nom?: string;
-  prenom?: string;
-  numeroTel?: string;
-  email?: string;
-}
+import { UserDTO, CreateUserDTO } from '@/core/entities/User'
 
 export interface IUserRepository {
-  /**
-   * Récupérer un utilisateur par son ID
-   */
-  getById(id: number): Promise<User | null>;
-
-  /**
-   * Récupérer un utilisateur par son user_id d'authentification
-   */
-  getByAuthId(authId: string): Promise<User | null>;
-
-  /**
-   * Récupérer un utilisateur par son email
-   */
-  getByEmail(email: string): Promise<User | null>;
-
-  /**
-   * Récupérer tous les utilisateurs d'un certain rôle
-   */
-  getByRole(role: UserRole): Promise<User[]>;
-
-  /**
-   * Créer un nouveau profil utilisateur
-   */
-  create(data: {
-    userId: string;
-    nom: string;
-    prenom: string;
-    email: string;
-    numeroTel?: string;
-    role: UserRole;
-  }): Promise<User>;
-
-  /**
-   * Mettre à jour un utilisateur
-   */
-  update(id: number, data: UpdateUserData): Promise<User>;
-
-  /**
-   * Supprimer un utilisateur
-   */
-  delete(id: number): Promise<void>;
+  createUser(data: CreateUserDTO): Promise<UserDTO>
+  findByEmail(email: string): Promise<UserDTO | null>
+  findByMatricule(matricule: string): Promise<UserDTO | null>
+  findById(id: string): Promise<UserDTO | null>
+  updateUser(id: string, data: Partial<UserDTO>): Promise<UserDTO>
+  sendEmail(to: string, subject: string, body: string): Promise<void>
 }

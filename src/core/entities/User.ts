@@ -1,123 +1,78 @@
-/**
- * Entité User - Logique métier pure
- * Cette classe ne dépend d'AUCUN framework ou bibliothèque externe
- * Elle contient uniquement la logique métier liée aux utilisateurs
- */
-
 export enum UserRole {
-  STUDENT = 'Etudiant',
-  STAFF = 'Gerant',
-  ADMIN = 'Administrateur', // Correspond au rôle dans la DB
+  STUDENT = 'student',
+  ADMIN = 'admin',
+  STAFF = 'staff'
 }
 
 export interface UserProps {
-  id: number;
-  userId?: string; // Auth provider ID (Supabase, etc.)
+  id: number | string;
   nom: string;
   prenom: string;
   email: string;
-  numeroTel?: string;
   role: UserRole;
-  createdAt?: Date;
-  updatedAt?: Date;
+  matricule?: string;
+  phone?: string;
+  password_hash?: string;
+  google_id?: string;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 export class User {
-  private props: UserProps;
+  public readonly id: number | string;
+  public readonly nom: string;
+  public readonly prenom: string;
+  public readonly email: string;
+  public readonly role: UserRole;
+  public readonly matricule?: string;
+  public readonly phone?: string;
+  public readonly password_hash?: string;
+  public readonly google_id?: string;
+  public readonly created_at?: Date;
+  public readonly updated_at?: Date;
 
   constructor(props: UserProps) {
-    this.validateProps(props);
-    this.props = { ...props };
-  }
-
-  // Getters
-  get id(): number {
-    return this.props.id;
-  }
-
-  get userId(): string | undefined {
-    return this.props.userId;
-  }
-
-  get nom(): string {
-    return this.props.nom;
-  }
-
-  get prenom(): string {
-    return this.props.prenom;
-  }
-
-  get email(): string {
-    return this.props.email;
-  }
-
-  get numeroTel(): string | undefined {
-    return this.props.numeroTel;
-  }
-
-  get role(): UserRole {
-    return this.props.role;
+    this.id = props.id;
+    this.nom = props.nom;
+    this.prenom = props.prenom;
+    this.email = props.email;
+    this.role = props.role;
+    this.matricule = props.matricule;
+    this.phone = props.phone;
+    this.password_hash = props.password_hash;
+    this.google_id = props.google_id;
+    this.created_at = props.created_at || new Date();
+    this.updated_at = props.updated_at || new Date();
   }
 
   get fullName(): string {
-    return `${this.props.prenom} ${this.props.nom}`;
+    return `${this.prenom} ${this.nom}`;
   }
+}
 
-  get createdAt(): Date | undefined {
-    return this.props.createdAt;
-  }
+// DTOs
+export interface UserDTO {
+  id: number | string;
+  nom: string;
+  prenom: string;
+  email: string;
+  role: 'student' | 'admin' | 'restaurant'  // ← AJOUTER CETTE LIGNE
+  matricule?: string;
+  phone?: string;
+  password_hash?: string;
+  google_id?: string;
+  created_at: Date;
+  updated_at: Date;
+}
 
-  get updatedAt(): Date | undefined {
-    return this.props.updatedAt;
-  }
+export interface CreateUserDTO {
+  nom: string;
+  prenom: string;
+  email: string;
+  password?: string;
+  matricule?: string;
+  phone?: string;
+  google_id?: string;
+  role?: UserRole;  // ← AJOUTER CETTE LIGNE
 
-  // Méthodes métier
-  isStudent(): boolean {
-    return this.props.role === UserRole.STUDENT;
-  }
-
-  isStaff(): boolean {
-    return this.props.role === UserRole.STAFF;
-  }
-
-  isAdmin(): boolean {
-    return this.props.role === UserRole.ADMIN;
-  }
-
-  canManageRestaurant(): boolean {
-    return this.isStaff() || this.isAdmin();
-  }
-
-  canManageOrders(): boolean {
-    return this.isStaff() || this.isAdmin();
-  }
-
-  // Validation métier
-  private validateProps(props: UserProps): void {
-    if (!props.nom || props.nom.trim().length === 0) {
-      throw new Error('Le nom est requis');
-    }
-
-    if (!props.prenom || props.prenom.trim().length === 0) {
-      throw new Error('Le prénom est requis');
-    }
-
-    if (!props.email || !this.isValidEmail(props.email)) {
-      throw new Error('Email invalide');
-    }
-
-    if (!Object.values(UserRole).includes(props.role)) {
-      throw new Error('Rôle invalide');
-    }
-  }
-
-  private isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
-
-  // Pour faciliter la sérialisation
-  toObject(): UserProps {
-    return { ...this.props };
-  }
 }
