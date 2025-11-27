@@ -101,6 +101,40 @@ cp .env.example .env.local
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+### 🔐 Redirections & Auth (Mise à jour novembre 2025)
+
+Le système d'authentification repose sur Supabase + Google OAuth et une couche métier (use cases + repositories).
+
+#### Comportements automatiques
+- Bouton de déconnexion global (layout) : supprime la session et redirige vers `/`.
+- Visite d'une page de login déjà authentifié :
+  - Admin → `/admin`
+  - Gérant → `/resto/{id}` (id = identifiant du compte)
+  - Étudiant/autre → `/home`
+- `NEXT_PUBLIC_ADMIN_EMAIL` configure l'email admin autorisé.
+- Si l'email admin est correct mais que le rôle DB ≠ `Administrateur`, accès autorisé temporairement.
+
+#### Variables d'environnement supplémentaires
+```env
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_ADMIN_EMAIL=joantsayem@gmail.com
+```
+Production : `NEXT_PUBLIC_SITE_URL=https://tchopmate.vercel.app`
+
+#### Redirect URLs Supabase (Authentication → URL Configuration)
+```
+http://localhost:3000/admin/login/callback
+http://localhost:3000/resto/login/callback
+https://tchopmate.vercel.app/admin/login/callback
+https://tchopmate.vercel.app/resto/login/callback
+```
+
+#### Correction rôle admin
+```sql
+UPDATE compte SET role = 'Administrateur' WHERE email = 'joantsayem@gmail.com';
+```
+Voir `FIX_ADMIN_AUTH.md` pour plus de détails.
+
 
 ### Lancer le serveur de développement
 

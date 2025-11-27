@@ -13,7 +13,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 type CartItem = {
   id: number
   name: string
-  price: string
+  price: string | number
   quantity: number
   image: string
 }
@@ -85,12 +85,21 @@ useEffect(() => {
     setOrderId(`CMD-${Date.now()}`)
   }, [])
 
+  // Helper to safely parse a price which may be a formatted string or a number
+  const parsePrice = (p: string | number) => {
+    if (typeof p === "number") return Number.isFinite(p) ? Math.round(p) : 0
+    if (typeof p === "string") {
+      const digits = p.replace(/\D/g, "")
+      return digits ? Number.parseInt(digits, 10) : 0
+    }
+    return 0
+  }
+
   const getTotalItems = () => cart.reduce((t, it) => t + it.quantity, 0)
 
   const getTotalPrice = () =>
     cart.reduce((total, item) => {
-      const price = Number.parseInt(item.price.replace(/\D/g, "")) || 0
-      return total + price * item.quantity
+      return total + parsePrice(item.price) * item.quantity
     }, 0)
 
   // Suppression de saveOrderAndClearCart car c'est la fonction handlePayAtRestaurant qui gère la logique métier API
@@ -358,7 +367,7 @@ useEffect(() => {
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-orange-600">
-                        {(Number.parseInt(item.price.replace(/\D/g, "")) || 0) * item.quantity} FCFA
+                        {parsePrice(item.price) * item.quantity} FCFA
                       </p>
                       <p className="text-xs text-gray-500 mt-1">Qty: {item.quantity}</p>
                     </div>

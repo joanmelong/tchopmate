@@ -71,7 +71,7 @@ export default function AdminDashboard() {
       console.log("📍 [/admin] Session trouvée pour:", session.user.email);
 
       // Vérifier si l'email correspond à l'admin autorisé
-      const adminEmail = "joantsayem@gmail.com";
+      const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "joantsayem@gmail.com";
       if (session.user.email !== adminEmail) {
         console.log("📍 [/admin] Email non autorisé:", session.user.email);
         await supabase.auth.signOut();
@@ -104,9 +104,16 @@ export default function AdminDashboard() {
       console.log("📍 [/admin] Compte trouvé:", compteData);
 
       if (compteData.role !== "Administrateur") {
-        console.log("📍 [/admin] Rôle non admin:", compteData.role);
-        router.push("/admin/login");
-        return;
+        if (session.user.email === adminEmail) {
+          console.log("📍 [/admin] Rôle non admin mais email admin autorisé - on laisse passer");
+          setAdminInfo({ nom: compteData.nom, prenom: compteData.prenom, email: compteData.email });
+          await loadGerants();
+          return;
+        } else {
+          console.log("📍 [/admin] Rôle non admin:", compteData.role);
+          router.push("/admin/login");
+          return;
+        }
       }
 
       console.log("📍 [/admin] ✅ Authentification admin réussie - affichage du dashboard");

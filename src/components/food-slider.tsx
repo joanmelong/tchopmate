@@ -10,14 +10,16 @@ interface Slide {
   description: string
 }
 
+// IMPORTANT: Les images dans /public doivent être référencées par un chemin absolu commençant par "/".
+// Eviter tout préfixe comme "@/public" ou chemins relatifs sans slash qui provoquent une erreur URL.
 const slides: Slide[] = [
   {
-    image: "@/public/delicious-african-jollof-rice-with-grilled-chicken.jpg",
+    image: "/delicious-african-jollof-rice-with-grilled-chicken.jpg",
     title: "Riz Jollof au Poulet",
     description: "Notre spécialité maison avec du poulet grillé et des légumes frais",
   },
   {
-    image: "traditional-african-ndole-dish-with-plantains-and-.jpg",
+    image: "/traditional-african-ndole-dish-with-plantains-and-.jpg",
     title: "Ndolé Traditionnel",
     description: "Plat camerounais authentique avec plantains et viande",
   },
@@ -31,7 +33,7 @@ const slides: Slide[] = [
     title: "Poisson Braisé & Attiéké",
     description: "Poisson frais grillé accompagné d'attiéké et sauce pimentée",
   },
-]
+];
 
 export function FoodSlider() {
   const [currentSlide, setCurrentSlide] = useState(0)

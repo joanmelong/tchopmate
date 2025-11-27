@@ -35,20 +35,26 @@ export function useAdminAuth() {
       setError(null);
 
       console.log('[useAdminAuth] Début du callback');
+      console.log('[useAdminAuth] URL actuelle:', window.location.href);
+      console.log('[useAdminAuth] Hash:', window.location.hash);
+      console.log('[useAdminAuth] Search params:', window.location.search);
 
       // Attendre un peu pour que la session OAuth soit établie
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const di = getDI();
       const useCase = di.handleAdminCallbackUseCase;
-      await useCase.execute();
+      const result = await useCase.execute();
 
-      console.log('[useAdminAuth] Callback réussi, redirection vers /admin');
+      console.log('[useAdminAuth] Callback réussi:', result);
+      console.log('[useAdminAuth] Redirection vers /admin');
+      
       // Rediriger vers le dashboard admin
       router.push('/admin');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erreur lors de l\'authentification';
-      console.error('[useAdminAuth] Erreur callback:', errorMessage);
+      console.error('[useAdminAuth] Erreur callback:', err);
+      console.error('[useAdminAuth] Stack trace:', err instanceof Error ? err.stack : 'No stack');
       setError(errorMessage);
       setIsLoading(false);
       
