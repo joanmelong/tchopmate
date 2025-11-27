@@ -42,10 +42,11 @@ import {
   Trash2,
   Menu,
   ClipboardList,
+  User as UserIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Footer } from "@/components/ui/footer"
-import Image from "next/image"
+
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { supabase } from "@/lib/supabaseClient"
@@ -62,6 +63,7 @@ type CartItem = {
 export default function MenuPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
+  const [userProfile, setUserProfile] = useState<{ nom: string; prenom: string } | null>(null)
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [cart, setCart] = useState<CartItem[]>([])
@@ -76,14 +78,42 @@ export default function MenuPage() {
         data: { user },
       } = await supabase.auth.getUser()
       setUser(user)
+      
+      // Charger le profil depuis la table compte
+      if (user) {
+        const { data: compte } = await supabase
+          .from("compte")
+          .select("nom, prenom")
+          .eq("user_id", user.id)
+          .maybeSingle()
+        
+        if (compte) {
+          setUserProfile(compte)
+        }
+      }
     }
 
     getUser()
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      
+      // Charger le profil lors du changement de session
+      if (session?.user) {
+        const { data: compte } = await supabase
+          .from("compte")
+          .select("nom, prenom")
+          .eq("user_id", session.user.id)
+          .maybeSingle()
+        
+        if (compte) {
+          setUserProfile(compte)
+        }
+      } else {
+        setUserProfile(null)
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -122,7 +152,7 @@ export default function MenuPage() {
     }
   }, [cart])
 
-  const toggleFavorite = (itemId: number) => {
+  const toggleFavorite = (itemId: string) => {
     setFavorites((prev) => {
       if (prev.includes(itemId)) {
         return prev.filter((id) => id !== itemId)
@@ -373,18 +403,21 @@ export default function MenuPage() {
                 </Badge>
               </Button>
 
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8 cursor-pointer">
+              <div 
+                className="flex items-center space-x-2 cursor-pointer hover:bg-orange-50 rounded-lg p-2 transition-colors"
+                onClick={() => router.push("/profil")}
+              >
+                <Avatar className="h-8 w-8">
                   <AvatarImage src={user?.user_metadata?.avatar_url || "/student-avatar.png"} />
                   <AvatarFallback className="bg-orange-100 text-orange-600">
-                    {user?.email?.charAt(0).toUpperCase() || "ET"}
+                    {userProfile ? `${userProfile.prenom.charAt(0)}${userProfile.nom.charAt(0)}`.toUpperCase() : user?.email?.charAt(0).toUpperCase() || "ET"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    {user?.user_metadata?.full_name || user?.email || "Étudiant"}
+                    {userProfile ? `${userProfile.prenom} ${userProfile.nom}` : user?.user_metadata?.full_name || user?.email || "Étudiant"}
                   </p>
-                  <p className="text-xs text-gray-500">Université Saint Jean</p>
+                  <p className="text-xs text-gray-500">Voir le profil</p>
                 </div>
               </div>
             </div>
@@ -416,12 +449,12 @@ export default function MenuPage() {
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={user?.user_metadata?.avatar_url || "/student-avatar.png"} />
                         <AvatarFallback className="bg-orange-100 text-orange-600">
-                          {user?.email?.charAt(0).toUpperCase() || "ET"}
+                          {userProfile ? `${userProfile.prenom.charAt(0)}${userProfile.nom.charAt(0)}`.toUpperCase() : user?.email?.charAt(0).toUpperCase() || "ET"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-medium text-gray-900">
-                          {user?.user_metadata?.full_name || user?.email || "Étudiant"}
+                          {userProfile ? `${userProfile.prenom} ${userProfile.nom}` : user?.user_metadata?.full_name || user?.email || "Étudiant"}
                         </p>
                         <p className="text-sm text-gray-500">Université Saint Jean</p>
                       </div>
@@ -454,6 +487,18 @@ export default function MenuPage() {
                           {favorites.length}
                         </Badge>
                       )}
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      className="justify-start"
+                      onClick={() => {
+                        router.push("/profil")
+                        setIsMobileMenuOpen(false)
+                      }}
+                    >
+                      <UserIcon className="h-5 w-5 mr-2" />
+                      Mon Profil
                     </Button>
 
                     <Button variant="ghost" className="justify-start relative" asChild>
@@ -555,15 +600,17 @@ export default function MenuPage() {
             <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
               <div className="relative h-48 bg-gray-100">
                 {item.image ? (
-                  <Image 
+                  <img 
                     src={item.image} 
                     alt={item.name} 
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16" fill="%239ca3af"%3EImage non disponible%3C/text%3E%3C/svg%3E';
+                      e.currentTarget.style.display = 'none';
+                      const parent = e.currentTarget.parentElement;
+                      if (parent) {
+                        parent.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200"><svg class="h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></div>';
+                      }
                     }}
-                    width={600}
-                    height={128}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -671,13 +718,25 @@ export default function MenuPage() {
               <div className="space-y-3">
                 {cart.map((item) => (
                   <div key={item.id} className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
-                    <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0">
-                      <Image
-                        src={item.image || "/placeholder.svg"}
-                        alt={item.name}
-                        fill
-                        className="object-cover rounded-md"
-                      />
+                    <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const parent = e.currentTarget.parentElement;
+                            if (parent) {
+                              parent.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>';
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ChefHat className="h-8 w-8 text-gray-400" />
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">

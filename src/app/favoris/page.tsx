@@ -123,7 +123,7 @@ export default function FavorisPage() {
 
   const getTotalPrice = () => {
     return cart.reduce((total, item) => {
-      const price = Number.parseInt(item.price.replace(/\D/g, ""))
+      const price = typeof item.price === 'number' ? item.price : (Number.parseInt(String(item.price).replace(/\D/g, "")) || 0)
       return total + price * item.quantity
     }, 0)
   }
@@ -435,9 +435,9 @@ export default function FavorisPage() {
 
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-gray-900 truncate">{item.name}</h4>
-                    <p className="text-sm text-orange-600 font-medium">{item.price}</p>
+                    <p className="text-sm text-orange-600 font-medium">{typeof item.price === 'number' ? `${item.price} FCFA` : item.price}</p>
                     <p className="text-xs text-gray-600">
-                      Total: {Number.parseInt(item.price.replace(/\D/g, "")) * item.quantity} FCFA
+                      Total: {(typeof item.price === 'number' ? item.price : (Number.parseInt(String(item.price).replace(/\D/g, "")) || 0)) * item.quantity} FCFA
                     </p>
                   </div>
 

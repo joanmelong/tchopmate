@@ -43,9 +43,11 @@ export function getAccessTokenFromRequest(request: NextRequest): string | null {
   if (cookieHeader) {
     // Parser les cookies
     const cookies = cookieHeader.split(";").reduce((acc, cookie) => {
-      const [key, value] = cookie.trim().split("=");
-      if (key && value) {
-        acc[key.trim()] = decodeURIComponent(value);
+      const [key, ...valueParts] = cookie.trim().split("=");
+      if (key && valueParts.length > 0) {
+        // Rejoindre les parties au cas où la valeur contient des '='
+        const value = valueParts.join("=");
+        acc[key.trim()] = value;
       }
       return acc;
     }, {} as Record<string, string>);
@@ -57,26 +59,45 @@ export function getAccessTokenFromRequest(request: NextRequest): string | null {
     for (const [key, value] of Object.entries(cookies)) {
       if (key.startsWith("sb-") && key.includes("-auth-token")) {
         try {
+          // Décoder l'URL avant de parser le JSON
+          const decodedValue = decodeURIComponent(value);
           // Le token peut être stocké comme un objet JSON ou directement comme une string
-          const parsed = JSON.parse(value);
+          const parsed = JSON.parse(decodedValue);
           if (parsed.access_token) {
+            console.log("Token trouvé dans cookie:", key);
             return parsed.access_token;
           }
         } catch {
           // Si ce n'est pas du JSON, c'est probablement le token directement
-          return value;
+          try {
+            const decodedValue = decodeURIComponent(value);
+            if (decodedValue && decodedValue.length > 20) {
+              console.log("Token direct trouvé dans cookie:", key);
+              return decodedValue;
+            }
+          } catch {
+            // Ignorer les erreurs de décodage
+          }
         }
       }
     }
 
     // Fallback: chercher les noms de cookies communs
-    return (
+    const fallbackToken = 
       cookies["sb-access-token"] ||
       cookies["sb-auth-token"] ||
       cookies["supabase-auth-token"] ||
-      cookies["sb-localhost-auth-token"] ||
-      null
-    );
+      cookies["sb-localhost-auth-token"];
+    
+    if (fallbackToken) {
+      try {
+        const decoded = decodeURIComponent(fallbackToken);
+        console.log("Token trouvé dans cookie fallback");
+        return decoded;
+      } catch {
+        return fallbackToken;
+      }
+    }
   }
 
   return null;
@@ -100,8 +121,14 @@ export async function getClientFromRequest(
 
     if (!accessToken) {
       console.log("Pas de token d'accès trouvé dans la requête");
+      console.log("Headers disponibles:", {
+        authorization: request.headers.get("authorization") ? "présent" : "absent",
+        cookie: request.headers.get("cookie") ? "présent" : "absent",
+      });
       return null;
     }
+    
+    console.log("Token d'accès trouvé, longueur:", accessToken.length)
 
     // Décoder le JWT pour extraire l'ID utilisateur
     const decoded = decodeJWT(accessToken);
