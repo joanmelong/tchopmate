@@ -19,7 +19,19 @@ export type CreateCommandePayload = {
 async function getAuthToken(): Promise<string | null> {
   try {
     const { supabase } = await import('@/lib/supabaseClient')
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session }, error } = await supabase.auth.getSession()
+    
+    if (error) {
+      console.error('Erreur récupération session:', error)
+      return null
+    }
+    
+    if (!session) {
+      console.log('Pas de session active')
+      return null
+    }
+    
+    console.log('Session trouvée, token présent:', !!session.access_token)
     return session?.access_token || null
   } catch (e) {
     console.error('Erreur récupération token:', e)
@@ -38,9 +50,9 @@ export async function createCommande(payload: CreateCommandePayload, token: stri
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      // 2. Utilisation du token reçu en argument.
       'Authorization': `Bearer ${token}`, 
     },
+    credentials: 'include', // Important pour envoyer les cookies de session
     body: JSON.stringify(payload),
   })
 
@@ -56,7 +68,8 @@ export async function getCommandes() {
   const token = await getAuthToken()
   
   if (!token) {
-    throw new Error('Vous devez être connecté pour voir vos commandes')
+    console.warn('Pas de token disponible pour récupérer les commandes')
+    return []
   }
 
   try {
@@ -64,19 +77,28 @@ export async function getCommandes() {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+      credentials: 'include', // Important pour envoyer les cookies de session
     })
     
     const data = await res.json()
     console.log('Réponse API /api/commandes:', data)
     
     if (!res.ok) {
-      throw new Error(data?.error || 'Erreur récupération commandes')
+      // Si non authentifié, retourner un tableau vide au lieu de throw
+      if (res.status === 401) {
+        console.warn('Non authentifié (401), retour tableau vide')
+        return []
+      }
+      console.warn('Erreur API:', data?.error)
+      return []
     }
 
     return data.commandes || []
   } catch (error) {
     console.error('Erreur fetch commandes:', error)
-    throw error
+    // Retourner un tableau vide au lieu de throw pour ne pas bloquer l'UI
+    return []
   }
 }

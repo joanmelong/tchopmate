@@ -158,9 +158,12 @@ function transformApiCommande(apiCommande: ApiCommande): Order | null {
 export default function CommandesPage() {
   const router = useRouter()
   const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [userProfile, setUserProfile] = useState<{ nom: string; prenom: string } | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [ordersLoading, setOrdersLoading] = useState(true)
 
   const [orders, setOrders] = useState<Order[]>([])
 
@@ -171,25 +174,63 @@ export default function CommandesPage() {
 
   useEffect(() => {
     const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        setUser(user)
+        
+        // Charger le profil depuis la table compte
+        if (user) {
+          const { data: compte } = await supabase
+            .from("compte")
+            .select("nom, prenom")
+            .eq("user_id", user.id)
+            .maybeSingle()
+          
+          if (compte) {
+            setUserProfile(compte)
+          }
+        }
+      } catch (error) {
+        console.error('Erreur récupération utilisateur:', error)
+      } finally {
+        setAuthLoading(false)
+      }
     }
 
     getUser()
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      
+      // Charger le profil lors du changement de session
+      if (session?.user) {
+        const { data: compte } = await supabase
+          .from("compte")
+          .select("nom, prenom")
+          .eq("user_id", session.user.id)
+          .maybeSingle()
+        
+        if (compte) {
+          setUserProfile(compte)
+        }
+      } else {
+        setUserProfile(null)
+      }
+      
+      setAuthLoading(false)
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  // Charger depuis localStorage au démarrage
+  // Charger depuis localStorage au démarrage (seulement si connecté)
   useEffect(() => {
+    if (!user) return
+    
     const savedOrders = localStorage.getItem('tchopmate-orders')
     if (savedOrders) {
       try {
@@ -201,12 +242,18 @@ export default function CommandesPage() {
         setOrders([])
       }
     }
-  }, [])
+  }, [user])
 
   // Synchroniser avec la BD (fetch depuis l'API et mettre à jour localStorage)
   useEffect(() => {
+    if (!user) {
+      setOrdersLoading(false)
+      return
+    }
+
     const syncFromApi = async () => {
       try {
+        setOrdersLoading(true)
         const mod = await import('@/services/commandes')
         console.log('Appel API getCommandes...')
         const commandes = await mod.getCommandes()
@@ -235,17 +282,22 @@ export default function CommandesPage() {
           }
         } else {
           console.log('Pas de commandes reçues de l\'API')
+          // Ne pas effacer les commandes si l'API ne retourne rien
+          // Garder les données localStorage existantes
         }
       } catch (e: any) {
         console.warn('Erreur synchronisation API:', e?.message || e)
-        // Ne pas bloquer si l'API échoue - utiliser les données du localStorage
+        // Ne pas effacer les commandes en cas d'erreur API
+        // Garder les données localStorage existantes
+      } finally {
+        setOrdersLoading(false)
       }
     }
 
     // Donner un délai court pour que l'authentification soit en place
     const timer = setTimeout(syncFromApi, 500)
     return () => clearTimeout(timer)
-  }, [])
+  }, [user])
 
   const defaultOrders: Order[] = [
     {
@@ -374,14 +426,15 @@ export default function CommandesPage() {
     },
   ]
 
-  // Fusionner les commandes par défaut avec celles chargées
+  // Charger les commandes par défaut seulement si pas d'utilisateur et pas de commandes
   useEffect(() => {
-    setOrders((prev) => {
-      if (prev.length > 0) return prev
-      return defaultOrders
-    })
+    // Ne charger les commandes par défaut que si l'utilisateur n'est pas connecté
+    // et qu'il n'y a pas de commandes dans localStorage
+    if (!authLoading && !user && orders.length === 0) {
+      setOrders(defaultOrders)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [authLoading, user])
 
   const getStatusBadge = (status: Order["status"]) => {
     switch (status) {
@@ -461,18 +514,21 @@ export default function CommandesPage() {
                 </Badge>
               </Button>
 
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8 cursor-pointer border-2 border-orange-200">
+              <div 
+                className="flex items-center space-x-2 cursor-pointer hover:bg-orange-50 rounded-lg p-2 transition-colors"
+                onClick={() => router.push("/profil")}
+              >
+                <Avatar className="h-8 w-8 border-2 border-orange-200">
                   <AvatarImage src={user?.user_metadata?.avatar_url || "/student-avatar.png"} />
                   <AvatarFallback className="bg-orange-100 text-orange-600 font-semibold">
-                    {user?.email?.charAt(0).toUpperCase() || "ET"}
+                    {userProfile ? `${userProfile.prenom.charAt(0)}${userProfile.nom.charAt(0)}`.toUpperCase() : user?.email?.charAt(0).toUpperCase() || "ET"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">
-                    {user?.user_metadata?.full_name || user?.email || "Étudiant"}
+                    {userProfile ? `${userProfile.prenom} ${userProfile.nom}` : user?.user_metadata?.full_name || user?.email || "Étudiant"}
                   </p>
-                  <p className="text-xs text-gray-500">Université Saint Jean</p>
+                  <p className="text-xs text-gray-500">Voir le profil</p>
                 </div>
               </div>
             </div>
@@ -490,12 +546,12 @@ export default function CommandesPage() {
                       <Avatar className="h-12 w-12 border-2 border-orange-200">
                         <AvatarImage src={user?.user_metadata?.avatar_url || "/student-avatar.png"} />
                         <AvatarFallback className="bg-orange-100 text-orange-600 font-semibold">
-                          {user?.email?.charAt(0).toUpperCase() || "ET"}
+                          {userProfile ? `${userProfile.prenom.charAt(0)}${userProfile.nom.charAt(0)}`.toUpperCase() : user?.email?.charAt(0).toUpperCase() || "ET"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-semibold text-gray-900">
-                          {user?.user_metadata?.full_name || user?.email || "Étudiant"}
+                          {userProfile ? `${userProfile.prenom} ${userProfile.nom}` : user?.user_metadata?.full_name || user?.email || "Étudiant"}
                         </p>
                         <p className="text-sm text-gray-500">Université Saint Jean</p>
                       </div>
@@ -523,6 +579,18 @@ export default function CommandesPage() {
                     >
                       <Heart className="h-5 w-5 mr-2" />
                       Favoris
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      className="justify-start"
+                      onClick={() => {
+                        router.push("/profil")
+                        setIsMobileMenuOpen(false)
+                      }}
+                    >
+                      <User className="h-5 w-5 mr-2" />
+                      Mon Profil
                     </Button>
 
                     <Button variant="ghost" className="justify-start relative" asChild>
@@ -560,8 +628,9 @@ export default function CommandesPage() {
         </div>
 
         {/* Orders List */}
-        <div className="space-y-4">
-          {orders.map((order, orderIndex) => (
+        {!authLoading && !ordersLoading && user && orders.length > 0 && (
+          <div className="space-y-4">
+            {orders.map((order, orderIndex) => (
             <Card
               key={order.id || `order-${orderIndex}`}
               className="overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-orange-200"
@@ -630,16 +699,43 @@ export default function CommandesPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {orders.length === 0 && (
+        {/* État de chargement */}
+        {(authLoading || ordersLoading) && (
+          <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Chargement de vos commandes...</p>
+          </div>
+        )}
+
+        {/* Utilisateur non connecté */}
+        {!authLoading && !user && (
+          <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
+            <div className="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <User className="h-10 w-10 text-red-500" />
+            </div>
+            <p className="text-gray-900 text-xl mb-2 font-bold">Vous n'êtes pas connecté</p>
+            <p className="text-gray-600 mb-6">Connectez-vous pour voir vos commandes</p>
+            <Button
+              className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-md"
+              onClick={() => router.push("/login?redirect=/commandes")}
+            >
+              Se connecter
+            </Button>
+          </div>
+        )}
+
+        {/* Utilisateur connecté mais aucune commande */}
+        {!authLoading && !ordersLoading && user && orders.length === 0 && (
           <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
             <div className="bg-orange-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Package className="h-10 w-10 text-orange-500" />
             </div>
-            <p className="text-gray-600 text-lg mb-2 font-semibold">Aucune commande pour le moment</p>
-            <p className="text-gray-500 mb-6">Commencez à explorer notre délicieux menu</p>
+            <p className="text-gray-900 text-xl mb-2 font-bold">Aucune commande pour le moment</p>
+            <p className="text-gray-600 mb-6">Commencez à explorer notre délicieux menu</p>
             <Button
               className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-md"
               onClick={() => router.push("/menu")}
