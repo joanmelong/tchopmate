@@ -12,12 +12,12 @@ interface Slide {
 
 const slides: Slide[] = [
   {
-    image: "@/public/delicious-african-jollof-rice-with-grilled-chicken.jpg",
+    image: "/delicious-african-jollof-rice-with-grilled-chicken.jpg",
     title: "Riz Jollof au Poulet",
     description: "Notre spécialité maison avec du poulet grillé et des légumes frais",
   },
   {
-    image: "traditional-african-ndole-dish-with-plantains-and-.jpg",
+    image: "/traditional-african-ndole-dish-with-plantains-and-.jpg",
     title: "Ndolé Traditionnel",
     description: "Plat camerounais authentique avec plantains et viande",
   },
@@ -47,17 +47,27 @@ export function FoodSlider() {
   useEffect(() => {
     const timer = setInterval(nextSlide, 5000)
     return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // helper pour s'assurer qu'on passe un src valide à <Image />
+  const getImageSrc = (src: string | undefined) => {
+    if (!src || typeof src !== "string") return "/placeholder.svg"
+    // si ça ne commence pas par / et ne ressemble pas à une URL, on retourne placeholder
+    if (!src.startsWith("/") && !/^https?:\/\//.test(src)) return "/placeholder.svg"
+    return src
+  }
 
   return (
     <div className="relative w-full max-w-5xl mx-auto">
       <div className="relative aspect-[4/3] md:aspect-[16/9] rounded-2xl overflow-hidden bg-muted">
         <Image
-          src={slides[currentSlide].image || "/placeholder.svg"}
-          alt={slides[currentSlide].title}
+          src={getImageSrc(slides[currentSlide]?.image)}
+          alt={slides[currentSlide]?.title ?? "Slide image"}
           className="w-full h-full object-cover"
-          width={600}
-          height={450}
+          width={1200}
+          height={675}
+          priority={false}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">
@@ -71,6 +81,7 @@ export function FoodSlider() {
         size="icon"
         className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border-0 shadow-lg"
         onClick={prevSlide}
+        aria-label="Diapositive précédente"
       >
         <ChevronLeft className="h-6 w-6" />
       </Button>
@@ -80,6 +91,7 @@ export function FoodSlider() {
         size="icon"
         className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border-0 shadow-lg"
         onClick={nextSlide}
+        aria-label="Diapositive suivante"
       >
         <ChevronRight className="h-6 w-6" />
       </Button>
@@ -99,3 +111,5 @@ export function FoodSlider() {
     </div>
   )
 }
+
+export default FoodSlider
