@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     const { data: finalCmd, error: finalErr } = await admin
       .from("commande")
       .select(
-        `id_commande, date_commande, statut, montant_total, commentaire, livraison, created_at, updated_at`
+        `id_commande, date_commande, statut, montant_total, commentaire, livraison, created_at, updated_at, creneau_retrait`
       )
       .eq("id_commande", commandeId)
       .single();
@@ -109,6 +109,24 @@ export async function POST(request: NextRequest) {
     if (finalErr || !finalCmd) {
       console.error("Erreur récupération commande:", finalErr);
       return NextResponse.json({ error: finalErr?.message ?? "Erreur récupération commande" }, { status: 500 });
+    }
+
+    // Créer une notification de confirmation de commande
+    const { data: { user } } = await admin.auth.getUser(request.headers.get("authorization")?.replace("Bearer ", "") || "");
+    if (user) {
+      let message = `Votre commande #${commandeId.substring(0, 8)} a été envoyée avec succès !`;
+      if (creneau_retrait) {
+        const creneauDate = new Date(creneau_retrait);
+        message += ` Retrait prévu le ${creneauDate.toLocaleDateString('fr-FR')} à partir de ${creneauDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}.`;
+      }
+
+      await admin.from("notifications").insert({
+        user_id: user.id,
+        commande_id: commandeId,
+        type: "commande_confirmee",
+        titre: "Commande confirmée",
+        message: message
+      });
     }
 
     // Récupérer les items avec infos plats pour l'affichage (incluant description, categorie, temps_preparation)
@@ -153,11 +171,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Récupérer uniquement les commandes du client authentifié
+    // Récupérer uniquement les commandes EN_ATTENTE du client authentifié
     const { data: commandes, error } = await admin
       .from("commande")
-      .select("id_commande, date_commande, statut, montant_total, commentaire, livraison, created_at")
+      .select("id_commande, date_commande, statut, montant_total, commentaire, livraison, created_at, creneau_retrait")
       .eq("client_id", client.id)
+      .eq("statut", "EN_ATTENTE") // Filtrer uniquement les commandes en attente
       .order("created_at", { ascending: false })
       .limit(50);
 

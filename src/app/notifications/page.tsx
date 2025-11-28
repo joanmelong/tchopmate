@@ -71,6 +71,8 @@ export default function NotificationsPage() {
 
   const getIcon = (type: string) => {
     switch (type) {
+      case 'commande_confirmee':
+        return <CheckCircle className="h-5 w-5 text-blue-500" />
       case 'commande_prete':
         return <CheckCircle className="h-5 w-5 text-green-500" />
       case 'commande_annulee':
@@ -86,6 +88,8 @@ export default function NotificationsPage() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
+      case 'commande_confirmee':
+        return 'bg-blue-100 text-blue-700'
       case 'commande_prete':
         return 'bg-green-100 text-green-700'
       case 'commande_annulee':

@@ -5,10 +5,11 @@
 import React, { useEffect, useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ShoppingCart, CreditCard, DollarSign, X } from "lucide-react"
+import { ShoppingCart, CreditCard, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
+import { CreneauSelector } from "@/components/order/CreneauSelector"
 
 type CartItem = {
   id: number
@@ -26,6 +27,9 @@ export default function PaymentPage() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [sessionToken, setSessionToken] = useState<string | null>(null) // CECI MANQUAIT !
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedCreneau, setSelectedCreneau] = useState<string | null>(null)
+  const [selectedCreneauDateTime, setSelectedCreneauDateTime] = useState<Date | null>(null)
+  const [restaurantId, setRestaurantId] = useState<string | null>(null)
 
   // Vérification de l'authentification et REDIRECTION IMMÉDIATE
 useEffect(() => {
@@ -83,6 +87,39 @@ useEffect(() => {
     }
     // Générer un identifiant de commande temporaire
     setOrderId(`CMD-${Date.now()}`)
+
+    // Récupérer le restaurant ID depuis localStorage ou depuis la base de données
+    const loadRestaurantId = async () => {
+      try {
+        // D'abord essayer localStorage
+        const savedRestaurantId = localStorage.getItem("current-restaurant-id")
+        if (savedRestaurantId && savedRestaurantId !== "default-restaurant-id") {
+          setRestaurantId(savedRestaurantId)
+          return
+        }
+
+        // Sinon, récupérer le premier restaurant disponible
+        const { data: restaurants, error } = await supabase
+          .from('restaurant')
+          .select('id_restaurant')
+          .limit(1)
+
+        if (error) {
+          console.error('Erreur récupération restaurant:', error)
+          return
+        }
+
+        if (restaurants && restaurants.length > 0) {
+          const firstRestaurantId = restaurants[0].id_restaurant
+          setRestaurantId(firstRestaurantId)
+          localStorage.setItem("current-restaurant-id", firstRestaurantId)
+        }
+      } catch (error) {
+        console.error('Erreur chargement restaurant ID:', error)
+      }
+    }
+
+    loadRestaurantId()
   }, [])
 
   const getTotalItems = () => cart.reduce((t, it) => t + it.quantity, 0)
@@ -95,10 +132,9 @@ useEffect(() => {
 
   // Suppression de saveOrderAndClearCart car c'est la fonction handlePayAtRestaurant qui gère la logique métier API
 
-  const handleMobileMoney = () => {
-
-    if (cart.length === 0) return
-    alert('La fonctionnalité de paiement par Mobile Money sera développée prochainement. Veuillez choisir un autre mode de paiement.')
+  const handleSelectCreneau = (creneauId: string, dateTime: Date) => {
+    setSelectedCreneau(creneauId)
+    setSelectedCreneauDateTime(dateTime)
   }
 
   // const handlePayAtRestaurant = async () => {
@@ -204,6 +240,11 @@ useEffect(() => {
       alert('Panier vide, session expirée ou utilisateur non identifié')
       return
     }
+
+    if (!selectedCreneauDateTime) {
+      alert('Veuillez sélectionner un créneau de retrait')
+      return
+    }
     
     setIsProcessing(true)
     
@@ -218,7 +259,7 @@ useEffect(() => {
         items: cart.map((it) => ({ name: it.name, quantity: it.quantity })),
         commentaire: null,
         livraison: false,
-        creneau_retrait: null,
+        creneau_retrait: selectedCreneauDateTime.toISOString(),
       }
       
       const res = await fetch('/api/commandes', {
@@ -392,29 +433,25 @@ useEffect(() => {
               <div className="bg-white rounded-2xl shadow-md p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                   <CreditCard className="h-6 w-6 text-orange-500" />
-                  Mode de paiement
+                  Confirmer la commande
                 </h3>
 
                 <div className="space-y-4">
-                  {/* Mobile Money */}
-                  <Button
-                    disabled={isProcessing}
-                    onClick={handleMobileMoney}
-                    className="w-full h-auto py-4 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold flex items-center gap-3 justify-center transition-all shadow-md hover:shadow-lg"
-                  >
-                    <DollarSign className="h-5 w-5" />
-                    <span>Payer par Mobile Money</span>
-                  </Button>
-
                   {/* Au restaurant */}
                   <Button
-                    disabled={isProcessing}
+                    disabled={isProcessing || !selectedCreneau}
                     onClick={handlePayAtRestaurant}
-                    className="w-full h-auto py-4 px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-semibold flex items-center gap-3 justify-center transition-all shadow-md hover:shadow-lg"
+                    className="w-full h-auto py-4 px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-semibold flex items-center gap-3 justify-center transition-all shadow-md hover:shadow-lg"
                   >
                     <CreditCard className="h-5 w-5" />
-                    <span>Payer au restaurant</span>
+                    <span>Confirmer la commande</span>
                   </Button>
+                  
+                  {!selectedCreneau && (
+                    <p className="text-sm text-orange-600 text-center">
+                      Veuillez sélectionner un créneau de retrait ci-dessous
+                    </p>
+                  )}
 
                   {/* Annuler commande */}
                   <Button
@@ -435,10 +472,26 @@ useEffect(() => {
                 )}
               </div>
 
+              {/* Sélection de créneau */}
+              <div className="bg-white rounded-2xl shadow-md p-6">
+                {restaurantId ? (
+                  <CreneauSelector
+                    restaurantId={restaurantId}
+                    selectedCreneau={selectedCreneau}
+                    onSelectCreneau={handleSelectCreneau}
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Chargement des créneaux disponibles...</p>
+                  </div>
+                )}
+              </div>
+
               {/* Info utile */}
               <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
                 <p className="text-sm text-gray-700">
-                  <strong>Note:</strong> Vous pouvez modifier votre commande en retournant au menu avant le paiement.
+                  <strong>Note:</strong> Sélectionnez votre créneau de retrait puis confirmez votre commande.
                 </p>
               </div>
             </div>

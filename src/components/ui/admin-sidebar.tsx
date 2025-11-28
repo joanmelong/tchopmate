@@ -6,13 +6,14 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { LayoutDashboard, UtensilsCrossed, ShoppingBag, Users, BarChart3, Bell, Menu } from "lucide-react"
+import { LayoutDashboard, UtensilsCrossed, ShoppingBag, Users, BarChart3, Clock, Bell, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigationLinks = [
   { href: "/resto/id", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/resto/id/plats", label: "Gestion des plats", icon: UtensilsCrossed },
   { href: "/resto/id/commandes", label: "Gestion des commandes", icon: ShoppingBag },
+  { href: "/resto/id/creneaux", label: "Créneaux horaires", icon: Clock },
   { href: "/resto/id/clients", label: "Gestion des clients", icon: Users },
   { href: "/resto/id/statistiques", label: "Statistiques", icon: BarChart3 },
 ]
