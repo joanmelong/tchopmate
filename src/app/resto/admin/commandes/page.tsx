@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,7 +23,11 @@ import {
   Package,
 } from "lucide-react"
 import { AdminSidebar } from "@/components/ui/admin-sidebar"
+import { CommandeGerantService, type GerantOrder } from '@/services/CommandeGerant'
 
+// Debbuging: logs, mapping etc. will follow in code
+
+// Interfaces types
 interface OrderItem {
   id: string
   name: string
@@ -38,7 +42,7 @@ interface Order {
   clientPhone: string
   items: OrderItem[]
   total: number
-  status: "en cours" | "livrée"
+  status: "en cours" | "livrée" | string
   date: string
   time: string
 }
@@ -50,76 +54,60 @@ export default function GestionCommandes() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
 
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: "#CMD001",
-      clientName: "Jean Dupont",
-      clientPhone: "+237 6 XX XX XX XX",
-      items: [
-        {
-          id: "1",
-          name: "Ndolé",
-          quantity: 2,
-          price: 1500,
-          image: "/ndole.jpg",
-        },
-        {
-          id: "2",
-          name: "Jus de bissap",
-          quantity: 1,
-          price: 500,
-          image: "/jus.jpg",
-        },
-      ],
-      total: 3500,
-      status: "en cours",
-      date: "15 Jan 2025",
-      time: "12:30",
-    },
-    {
-      id: "#CMD002",
-      clientName: "Marie Kouam",
-      clientPhone: "+237 6 YY YY YY YY",
-      items: [
-        {
-          id: "3",
-          name: "Poulet DG",
-          quantity: 1,
-          price: 2000,
-          image: "/poulet.jpg",
-        },
-        {
-          id: "4",
-          name: "Plantain frit",
-          quantity: 1,
-          price: 500,
-          image: "/plantain.jpg",
-        },
-      ],
-      total: 2500,
-      status: "en cours",
-      date: "15 Jan 2025",
-      time: "12:45",
-    },
-    {
-      id: "#CMD003",
-      clientName: "Paul Nkeng",
-      clientPhone: "+237 6 ZZ ZZ ZZ ZZ",
-      items: [
-        {
-          id: "5",
-          name: "Riz sauté",
-          quantity: 3,
-          price: 1200,
-          image: "/riz.jpg",
-        },
-      ],
-      total: 3600,
-      status: "livrée",
-      date: "15 Jan 2025",
-      time: "11:20",
-    },
-  ])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loadingOrders, setLoadingOrders] = useState<boolean>(false)
+
+  // Fetch orders from the server for the current gerant's restaurant
+  // loadOrders is used in useEffect + refresh button
+  // loadOrders is used in useEffect + refresh button
+  const loadOrders = async () => {
+      try {
+        console.log('[GestionCommandes] Chargement des commandes pour le restaurant')
+        setLoadingOrders(true)
+        const data: GerantOrder[] = await CommandeGerantService.fetchOrders()
+
+        // Map GerantOrder => Order (UI format)
+        const normalizedStatus = (s?: string) => {
+          if (!s) return 'en cours'
+          const v = String(s).toLowerCase()
+          if (v === 'livree' || v === 'livrée' || v === 'livre') return 'livrée'
+          if (v.includes('attente') || v.includes('en_attente') || v.includes('to_pay')) return 'en cours'
+          return s
+        }
+
+        const mapped = (data || []).map((g) => ({
+          id: g.id_commande,
+          clientName: g.client?.nom ? `${g.client.nom} ${g.client.prenom ?? ''}`.trim() : 'Client',
+          clientPhone: g.client?.numero_tel ?? g.client?.email ?? 'N/A',
+          items: (g.items || []).map((it: any) => ({
+            id: String(it.id || it.plat_id || Math.random()),
+            name: it.nom ?? 'Plat',
+            quantity: it.quantite ?? it.quantity ?? 1,
+            price: it.prix ?? 0,
+            image: it.image_url ?? '/placeholder.svg',
+          })),
+          total: g.montant_total ?? 0,
+          status: normalizedStatus(g.statut),
+          date: g.date_commande ? new Date(g.date_commande).toLocaleDateString('fr-FR') : '',
+          time: g.date_commande ? new Date(g.date_commande).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '',
+        }))
+
+        setOrders(mapped)
+        console.log('[GestionCommandes] Commandes chargées', mapped.length)
+      } catch (e) {
+        console.error('[GestionCommandes] Erreur chargement commandes:', e)
+      } finally {
+        setLoadingOrders(false)
+      }
+  }
+
+  useEffect(() => {
+    let isMounted = true
+    loadOrders()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const navigationLinks = [
     { href: "/resto/admin", label: "Tableau de bord", icon: LayoutDashboard },
@@ -137,13 +125,47 @@ export default function GestionCommandes() {
     return matchesSearch && matchesStatus
   })
 
-  const handleStatusChange = (orderId: string, newStatus: "en cours" | "livrée") => {
-    setOrders(orders.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)))
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    console.log('[GestionCommandes] handleStatusChange', orderId, newStatus)
+    // Normaliser le statut pour le serveur (supprimer accents et mettre en minuscule)
+    const statusForServer = String(newStatus).normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+    // Update server
+    const ok = await CommandeGerantService.updateOrderStatus(orderId, statusForServer)
+    if (!ok) {
+      console.warn('[GestionCommandes] Échec update statut serveur pour', orderId)
+      return
+    }
+    // Update local state
+    setOrders((prev) => prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)))
   }
 
-  const handleViewDetails = (order: Order) => {
-    setSelectedOrder(order)
-    setIsDetailDialogOpen(true)
+  const handleViewDetails = async (order: Order) => {
+    try {
+      console.log('[GestionCommandes] handleViewDetails', order.id)
+      const full = await CommandeGerantService.getOrder(order.id)
+      if (!full) {
+        console.warn('[GestionCommandes] Détails commande introuvables côté serveur pour', order.id)
+        setSelectedOrder(order)
+        setIsDetailDialogOpen(true)
+        return
+      }
+      const mapped: Order = {
+        id: full.id_commande,
+        clientName: full.client?.nom ? `${full.client.nom} ${full.client.prenom ?? ''}`.trim() : 'Client',
+        clientPhone: full.client?.numero_tel ?? full.client?.email ?? 'N/A',
+        items: (full.items || []).map((it: any) => ({ id: String(it.id || it.plat_id || Math.random()), name: it.nom ?? 'Plat', quantity: it.quantite ?? 1, price: it.prix ?? 0, image: it.image_url ?? '/placeholder.svg' })),
+        total: full.montant_total ?? 0,
+        status: full.statut ?? 'en cours',
+        date: full.date_commande ? new Date(full.date_commande).toLocaleDateString('fr-FR') : '',
+        time: full.date_commande ? new Date(full.date_commande).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '',
+      };
+      setSelectedOrder(mapped)
+      setIsDetailDialogOpen(true)
+    } catch (e) {
+      console.error('[GestionCommandes] Exception handleViewDetails:', e)
+      setSelectedOrder(order)
+      setIsDetailDialogOpen(true)
+    }
   }
 
   return (
@@ -155,9 +177,16 @@ export default function GestionCommandes() {
       <main className="flex-1 lg:ml-64">
         <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="mb-2 text-3xl font-bold text-gray-900">Gestion des commandes</h1>
-            <p className="text-gray-600">Suivez et gérez toutes les commandes en temps réel</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="mb-2 text-3xl font-bold text-gray-900">Gestion des commandes</h1>
+              <p className="text-gray-600">Suivez et gérez toutes les commandes en temps réel</p>
+            </div>
+            <div>
+              <Button variant="outline" onClick={() => loadOrders()} className="bg-white">
+                Rafraîchir
+              </Button>
+            </div>
           </div>
 
           {/* Stats */}
@@ -235,6 +264,12 @@ export default function GestionCommandes() {
           </Card>
 
           {/* Orders List */}
+          {loadingOrders ? (
+            <Card className="border-orange-200 p-12 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4" />
+              <p className="text-gray-600">Chargement des commandes…</p>
+            </Card>
+          ) : (
           <div className="space-y-4">
             {filteredOrders.map((order) => (
               <Card
@@ -300,6 +335,21 @@ export default function GestionCommandes() {
                             Marquer livrée
                           </Button>
                         )}
+                        {order.status !== 'livrée' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 border-2 border-red-300 text-red-600 hover:bg-red-50"
+                            onClick={async () => {
+                              const ok = await CommandeGerantService.cancelOrder(order.id)
+                              if (ok) {
+                                setOrders((prev) => prev.filter((o) => o.id !== order.id))
+                              }
+                            }}
+                          >
+                            Annuler
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -307,6 +357,7 @@ export default function GestionCommandes() {
               </Card>
             ))}
           </div>
+          )}
 
           {filteredOrders.length === 0 && (
             <Card className="border-orange-200 p-12 text-center">
@@ -399,15 +450,29 @@ export default function GestionCommandes() {
 
               {/* Actions */}
               {selectedOrder.status === "en cours" && (
-                <Button
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                  onClick={() => {
-                    handleStatusChange(selectedOrder.id, "livrée")
-                    setIsDetailDialogOpen(false)
-                  }}
-                >
-                  Marquer comme livrée
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                    onClick={() => {
+                      handleStatusChange(selectedOrder.id, "livrée")
+                      setIsDetailDialogOpen(false)
+                    }}
+                  >
+                    Marquer comme livrée
+                  </Button>
+                  <Button
+                    className="w-full border-2 border-red-300 text-red-600 hover:bg-red-50"
+                    onClick={async () => {
+                      const ok = await CommandeGerantService.cancelOrder(selectedOrder.id)
+                      if (ok) {
+                        setOrders((prev) => prev.filter((o) => o.id !== selectedOrder.id))
+                        setIsDetailDialogOpen(false)
+                      }
+                    }}
+                  >
+                    Annuler la commande
+                  </Button>
+                </div>
               )}
             </div>
           )}

@@ -46,32 +46,23 @@ export default function AdminDashboard() {
     },
   ]
 
-  const recentOrders = [
-    {
-      id: "#CMD001",
-      client: "Jean Dupont",
-      items: 3,
-      total: "4,500 FCFA",
-      status: "en cours",
-      time: "Il y a 5 min",
-    },
-    {
-      id: "#CMD002",
-      client: "Marie Kouam",
-      items: 2,
-      total: "3,200 FCFA",
-      status: "en cours",
-      time: "Il y a 12 min",
-    },
-    {
-      id: "#CMD003",
-      client: "Paul Nkeng",
-      items: 4,
-      total: "5,800 FCFA",
-      status: "livrée",
-      time: "Il y a 25 min",
-    },
-  ]
+  // Recent orders are now fetched live from the server for the gerant's restaurant
+  const [recentOrders, setRecentOrders] = useState<any[]>([])
+
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      try {
+        const fetched = await CommandeGerantService.fetchOrders()
+        if (!mounted) return
+        setRecentOrders((fetched || []).slice(0, 3))
+      } catch (e) {
+        console.error('[AdminDashboard] Erreur fetch recent orders', e)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
 
   const popularDishes = [
     { name: "Ndolé", orders: 45, revenue: "22,500 FCFA" },

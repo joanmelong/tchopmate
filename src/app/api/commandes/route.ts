@@ -70,7 +70,6 @@ export async function POST(request: NextRequest) {
       
       if (platErr || !platRow) {
         console.error("Plat introuvable:", name, platErr);
-        // Essayer une recherche par égalité exacte comme dernier recours
         const { data: exactMatch } = await admin.from("plat").select("id").eq("nom", name).maybeSingle();
         if (!exactMatch) {
           return NextResponse.json({ error: `Plat introuvable: ${name}. Vérifiez que le plat existe en BD.` }, { status: 400 });
@@ -162,7 +161,7 @@ export async function GET(request: NextRequest) {
     for (const c of commandes ?? []) {
       const { data: itemsData, error: itemsErr } = await admin
         .from("commande_plat")
-        .select("quantite, id, plat_id, plat(nom, prix, image_url, description, categorie, temps_preparation)")
+        .select("quantite, plat_id, plat(nom, prix, image_url, description, categorie, temps_preparation)")
         .eq("commande_id", c.id_commande);
 
       if (itemsErr) {

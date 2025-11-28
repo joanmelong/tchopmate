@@ -5,34 +5,49 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
 
-const orders = [
-  {
-    id: "#CMD001",
-    customer: "Jean Dupont",
-    items: "Poulet DG, Jus d'orange",
-    total: "3,600 FCFA",
-    status: "Livrée",
-    time: "14:30",
-  },
-  {
-    id: "#CMD002",
-    customer: "Marie Nkomo",
-    items: "Ndolé, Eau minérale",
-    total: "2,800 FCFA",
-    status: "En cours",
-    time: "14:45",
-  },
-  {
-    id: "#CMD003",
-    customer: "Pierre Kamga",
-    items: "Riz sauté, Bissap",
-    total: "2,300 FCFA",
-    status: "En cours",
-    time: "15:00",
-  },
-]
+import { useEffect, useState } from 'react'
+import { CommandeGerantService } from '@/services/CommandeGerant'
+
+// We'll keep a simplified Order shape for the UI component
+type RecentOrder = {
+  id: string
+  customer: string
+  items: string
+  total: string
+  status: string
+  time: string
+}
+
+const ordersDefault: RecentOrder[] = []
 
 export function RecentOrders() {
+  const [orders, setOrders] = useState<RecentOrder[]>(ordersDefault)
+
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      try {
+        console.log('[RecentOrders] Chargement des commandes récentes')
+        const fetched = await CommandeGerantService.fetchOrders()
+        if (!mounted) return
+        // Transform to table shape for UI (first 3)
+        const transformed = (fetched || []).slice(0, 3).map((o: any) => ({
+          id: o.id_commande,
+          customer: o.client?.nom ? `${o.client.nom} ${o.client.prenom ?? ''}` : 'Client',
+          items: (o.items || []).map((it: any) => it.nom).join(', '),
+          total: `${o.montant_total ?? 0} FCFA`,
+          status: o.statut ?? 'en cours',
+          time: o.date_commande ? new Date(o.date_commande).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '-',
+        }))
+        setOrders(transformed)
+      } catch (e) {
+        console.error('[RecentOrders] Erreur fetch recent orders', e)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Livrée":
@@ -64,7 +79,7 @@ export function RecentOrders() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
+                {orders.map((order) => (
                 <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-3 px-4 font-medium text-gray-900">{order.id}</td>
                   <td className="py-3 px-4 text-gray-700">{order.customer}</td>

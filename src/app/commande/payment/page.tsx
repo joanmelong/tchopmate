@@ -392,7 +392,7 @@ useEffect(() => {
                 </h3>
 
                 <div className="space-y-4">
-                  {/* Mobile Money */}
+                  {/* Mobile Money 
                   <Button
                     disabled={isProcessing}
                     onClick={handleMobileMoney}
@@ -400,7 +400,7 @@ useEffect(() => {
                   >
                     <DollarSign className="h-5 w-5" />
                     <span>Payer par Mobile Money</span>
-                  </Button>
+                  </Button>/*}
 
                   {/* Au restaurant */}
                   <Button

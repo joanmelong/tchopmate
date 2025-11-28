@@ -1,62 +1,79 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye, CheckCircle, Clock, AlertCircle } from "lucide-react"
 import { OrderDetailDialog } from "@/components/admin/order-detail-dialog"
+import { ScannerDialog } from '@/components/qrcode/scanner-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function OrdersPage() {
+  const [scannerOpen, setScannerOpen] = useState(false)
   const [showDetail, setShowDetail] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
-  const [orders, setOrders] = useState([
-    {
-      id: "#CMD001",
-      customer: "Jean Dupont",
-      items: [
-        { name: "Poulet DG", qty: 1, price: "3,000 FCFA" },
-        { name: "Jus d'orange", qty: 1, price: "600 FCFA" },
-      ],
-      total: "3,600 FCFA",
-      status: "livrée",
-      time: "14:30",
-      address: "Université Saint Jean, Bloc A",
-    },
-    {
-      id: "#CMD002",
-      customer: "Marie Nkomo",
-      items: [
-        { name: "Ndolé aux crevettes", qty: 2, price: "2,500 FCFA" },
-        { name: "Eau minérale", qty: 2, price: "300 FCFA" },
-      ],
-      total: "5,600 FCFA",
-      status: "en cours",
-      time: "14:45",
-      address: "Université Saint Jean, Bloc B",
-    },
-    {
-      id: "#CMD003",
-      customer: "Pierre Kamga",
-      items: [{ name: "Riz sauté aux légumes", qty: 1, price: "1,800 FCFA" }],
-      total: "1,800 FCFA",
-      status: "aucun",
-      time: "15:00",
-      address: "Université Saint Jean, Bloc C",
-    },
-  ])
+  const [orders, setOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState<boolean>(false)
+  
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      try {
+        setLoading(true)
+        console.log('[OrdersPage] Fetch commandes pour restaurant')
+        const fetched = await (await import('@/services/CommandeGerant')).CommandeGerantService.fetchOrders()
+        if (!mounted) return
+        const normalize = (s?: string) => {
+          if (!s) return 'en attente'
+          const v = String(s).toLowerCase()
+          if (v.includes('livr')) return 'livrée'
+          if (v.includes('cours') || v.includes('en_cours') || v.includes('en cours')) return 'en cours'
+          return 'en attente'
+        }
+        setOrders((fetched || []).map((o: any) => ({ ...o, status: normalize(o.statut) })))
+      } catch (e) {
+        console.error('[OrdersPage] Erreur fetch commandes:', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
 
   const pendingOrders = orders.filter((o) => o.status === "aucun")
   const inProgressOrders = orders.filter((o) => o.status === "en cours")
   const deliveredOrders = orders.filter((o) => o.status === "livrée")
 
-  const markAsDelivered = (orderId: string) => {
-    setOrders(orders.map((o) => (o.id === orderId ? { ...o, status: "livrée" } : o)))
+  const markAsDelivered = async (orderId: string) => {
+    console.log('[OrdersPage] markAsDelivered', orderId)
+    const ok = await (await import('@/services/CommandeGerant')).CommandeGerantService.updateOrderStatus(orderId, 'livree')
+    if (ok) setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: 'livrée' } : o)))
   }
 
-  const markAsInProgress = (orderId: string) => {
-    setOrders(orders.map((o) => (o.id === orderId ? { ...o, status: "en cours" } : o)))
+  const markAsInProgress = async (orderId: string) => {
+    console.log('[OrdersPage] markAsInProgress', orderId)
+    const ok = await (await import('@/services/CommandeGerant')).CommandeGerantService.updateOrderStatus(orderId, 'en_cours')
+    if (ok) setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: 'en cours' } : o)))
+  }
+
+  const onScanned = async (decodedText: string) => {
+    console.log('[OrdersPage] onScanned', decodedText)
+    try {
+      const mod = await import('@/services/CommandeScanner')
+      const scannedOrder = await mod.CommandeScannerService.processScannedQRCode(decodedText)
+      if (!scannedOrder) {
+        console.warn('[OrdersPage] scanned order not found or invalid')
+        return
+      }
+      // Update list to mark it delivered
+      setOrders((prev) => prev.map((o) => (o.id === scannedOrder.id ? { ...o, status: 'livrée' } : o)))
+      setSelectedOrder(scannedOrder)
+      setShowDetail(true)
+    } catch (e) {
+      console.error('[OrdersPage] onScanned error', e)
+    }
   }
 
   const OrderRow = ({ order }: { order: any }) => (
@@ -132,6 +149,11 @@ export default function OrdersPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Gestion des commandes</h1>
         <p className="text-gray-600 mt-1">Gérez les commandes en temps réel</p>
+        <div className="mt-3">
+          <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => setScannerOpen(true)}>
+            Scanner QR
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="pending" className="w-full">
@@ -215,6 +237,8 @@ export default function OrdersPage() {
         onMarkAsInProgress={markAsInProgress}
         onMarkAsDelivered={markAsDelivered}
       />
+
+      <ScannerDialog open={scannerOpen} onOpenChange={setScannerOpen} onScanned={onScanned} />
     </div>
   )
 }
