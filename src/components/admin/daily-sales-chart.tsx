@@ -2,29 +2,59 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { useAnalyticsData } from "@/hooks/use-analytics-data"
+import { User } from "@/core/entities/User"
 
-const data = [
-  { time: "08:00", sales: 2400 },
-  { time: "10:00", sales: 3200 },
-  { time: "12:00", sales: 5600 },
-  { time: "14:00", sales: 4200 },
-  { time: "16:00", sales: 3800 },
-  { time: "18:00", sales: 6200 },
-  { time: "20:00", sales: 4800 },
-]
+interface DailySalesChartProps {
+  user: User | null;
+  restaurantId: string;
+}
 
-export function DailySalesChart() {
+export function DailySalesChart({ user, restaurantId }: DailySalesChartProps) {
+  const { data, isLoading, error } = useAnalyticsData(user, restaurantId, 7);
+  if (isLoading) {
+    return (
+      <Card className="border-orange-100">
+        <CardHeader className="border-b border-orange-100">
+          <CardTitle className="text-gray-900">Ventes de la semaine</CardTitle>
+          <CardDescription>Diagramme des ventes par jour</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <Card className="border-orange-100">
+        <CardHeader className="border-b border-orange-100">
+          <CardTitle className="text-gray-900">Ventes de la semaine</CardTitle>
+          <CardDescription>Diagramme des ventes par jour</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] flex items-center justify-center">
+            <p className="text-red-600">{error || "Erreur lors du chargement des données"}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="border-orange-100">
       <CardHeader className="border-b border-orange-100">
-        <CardTitle className="text-gray-900">Ventes du jour</CardTitle>
-        <CardDescription>Diagramme des ventes par heure</CardDescription>
+        <CardTitle className="text-gray-900">Ventes de la semaine</CardTitle>
+        <CardDescription>Diagramme des ventes par jour</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data}>
+          <LineChart data={data.dailySales}>
             <CartesianGrid strokeDasharray="3 3" stroke="#fef3c7" />
-            <XAxis dataKey="time" stroke="#9ca3af" />
+            <XAxis dataKey="day" stroke="#9ca3af" />
             <YAxis stroke="#9ca3af" />
             <Tooltip
               contentStyle={{
@@ -32,6 +62,10 @@ export function DailySalesChart() {
                 border: "2px solid #f97316",
                 borderRadius: "8px",
               }}
+              formatter={(value, name) => [
+                name === 'sales' ? `${value.toLocaleString()} FCFA` : value,
+                name === 'sales' ? 'Ventes' : 'Commandes'
+              ]}
             />
             <Line
               type="monotone"
