@@ -1,6 +1,6 @@
 
 "use client"
-
+import { NotificationBell } from "@/components/notification-bell"
 import React, { useState, useEffect } from "react"
 
 // Interface for the plat data structure
@@ -447,12 +447,13 @@ export default function MenuPage() {
                 )}
               </Button>
 
-              <Button variant="ghost" size="sm" className="relative">
-                <Bell className="h-5 w-5" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-orange-500 text-white text-xs">
-                  3
-                </Badge>
-              </Button>
+              <div className="flex items-center justify-between w-full">
+  <div className="flex items-center">
+    <Bell className="h-5 w-5 mr-2" />
+    Notifications
+  </div>
+  <NotificationBell />
+</div>
 
               <div 
                 className="flex items-center space-x-2 cursor-pointer hover:bg-orange-50 rounded-lg p-2 transition-colors"

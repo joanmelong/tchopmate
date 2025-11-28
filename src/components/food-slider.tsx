@@ -46,7 +46,16 @@ export function FoodSlider() {
   useEffect(() => {
     const timer = setInterval(nextSlide, 5000)
     return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // helper pour s'assurer qu'on passe un src valide à <Image />
+  const getImageSrc = (src: string | undefined) => {
+    if (!src || typeof src !== "string") return "/placeholder.svg"
+    // si ça ne commence pas par / et ne ressemble pas à une URL, on retourne placeholder
+    if (!src.startsWith("/") && !/^https?:\/\//.test(src)) return "/placeholder.svg"
+    return src
+  }
 
   return (
     <div className="relative w-full max-w-5xl mx-auto">
@@ -71,6 +80,7 @@ export function FoodSlider() {
         size="icon"
         className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border-0 shadow-lg"
         onClick={prevSlide}
+        aria-label="Diapositive précédente"
       >
         <ChevronLeft className="h-6 w-6" />
       </Button>
@@ -80,6 +90,7 @@ export function FoodSlider() {
         size="icon"
         className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border-0 shadow-lg"
         onClick={nextSlide}
+        aria-label="Diapositive suivante"
       >
         <ChevronRight className="h-6 w-6" />
       </Button>
@@ -99,3 +110,5 @@ export function FoodSlider() {
     </div>
   )
 }
+
+export default FoodSlider

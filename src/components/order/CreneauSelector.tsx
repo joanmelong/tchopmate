@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Clock, Users, Calendar } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
 
@@ -24,15 +23,24 @@ interface CreneauSelectorProps {
 export function CreneauSelector({ restaurantId, selectedCreneau, onSelectCreneau }: CreneauSelectorProps) {
   const [creneaux, setCreneaux] = useState<Creneau[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 
   useEffect(() => {
     loadCreneaux()
-  }, [restaurantId, selectedDate])
+  }, [restaurantId])
 
   const loadCreneaux = async () => {
     try {
       setLoading(true)
+      
+      // Vérifier que le restaurantId est valide
+      if (!restaurantId || restaurantId === "default-restaurant-id") {
+        console.warn('Restaurant ID invalide:', restaurantId)
+        setCreneaux([])
+        setLoading(false)
+        return
+      }
+      
+      console.log('Chargement créneaux pour restaurant:', restaurantId)
       
       // Récupérer les créneaux du restaurant
       const { data: creneauxData, error } = await supabase
@@ -44,22 +52,28 @@ export function CreneauSelector({ restaurantId, selectedCreneau, onSelectCreneau
 
       if (error) {
         console.error('Erreur chargement créneaux:', error)
+        setLoading(false)
         return
       }
+      
+      console.log('Créneaux récupérés de la BD:', creneauxData)
 
-      // Vérifier le jour de la semaine (1=Lundi, 7=Dimanche)
-      const dayOfWeek = selectedDate.getDay() || 7 // Dimanche = 0 -> 7
+      // Vérifier le jour de la semaine (1=Lundi, 7=Dimanche) - toujours aujourd'hui
+      const today = new Date()
+      const dayOfWeek = today.getDay() || 7 // Dimanche = 0 -> 7
 
       // Filtrer les créneaux disponibles pour ce jour
       const creneauxDuJour = creneauxData?.filter(c => 
         c.jours_semaine?.includes(dayOfWeek)
       ) || []
+      
+      console.log('Jour de la semaine:', dayOfWeek, 'Créneaux du jour:', creneauxDuJour)
 
       // Pour chaque créneau, compter les commandes existantes
       const creneauxAvecCount = await Promise.all(
         creneauxDuJour.map(async (creneau) => {
-          // Créer la date/heure du créneau
-          const creneauDateTime = new Date(selectedDate)
+          // Créer la date/heure du créneau pour aujourd'hui
+          const creneauDateTime = new Date(today)
           const [heureDebut, minuteDebut] = creneau.heure_debut.split(':')
           creneauDateTime.setHours(parseInt(heureDebut), parseInt(minuteDebut), 0, 0)
 
@@ -78,6 +92,7 @@ export function CreneauSelector({ restaurantId, selectedCreneau, onSelectCreneau
         })
       )
 
+      console.log('Créneaux finaux avec comptage:', creneauxAvecCount)
       setCreneaux(creneauxAvecCount)
     } catch (error) {
       console.error('Erreur:', error)
@@ -86,32 +101,11 @@ export function CreneauSelector({ restaurantId, selectedCreneau, onSelectCreneau
     }
   }
 
-  const getNextDays = (count: number) => {
-    const days = []
-    for (let i = 0; i < count; i++) {
-      const date = new Date()
-      date.setDate(date.getDate() + i)
-      days.push(date)
-    }
-    return days
-  }
 
-  const formatDate = (date: Date) => {
-    const today = new Date()
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-
-    if (date.toDateString() === today.toDateString()) {
-      return "Aujourd'hui"
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return "Demain"
-    } else {
-      return date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
-    }
-  }
 
   const handleSelectCreneau = (creneau: Creneau) => {
-    const creneauDateTime = new Date(selectedDate)
+    const today = new Date()
+    const creneauDateTime = new Date(today)
     const [heure, minute] = creneau.heure_debut.split(':')
     creneauDateTime.setHours(parseInt(heure), parseInt(minute), 0, 0)
     
@@ -120,11 +114,13 @@ export function CreneauSelector({ restaurantId, selectedCreneau, onSelectCreneau
 
   const isCreneauPassed = (creneau: Creneau) => {
     const now = new Date()
-    const creneauDateTime = new Date(selectedDate)
-    const [heure, minute] = creneau.heure_debut.split(':')
-    creneauDateTime.setHours(parseInt(heure), parseInt(minute), 0, 0)
+    const today = new Date()
+    const creneauEndDateTime = new Date(today)
+    const [heureFin, minuteFin] = creneau.heure_fin.split(':')
+    creneauEndDateTime.setHours(parseInt(heureFin), parseInt(minuteFin), 0, 0)
     
-    return creneauDateTime < now
+    // Le créneau est passé seulement après l'heure de fin
+    return creneauEndDateTime < now
   }
 
   const isCreneauFull = (creneau: Creneau) => {
@@ -139,35 +135,29 @@ export function CreneauSelector({ restaurantId, selectedCreneau, onSelectCreneau
           Choisissez votre créneau de retrait
         </CardTitle>
         <CardDescription>
-          Sélectionnez le jour et l'heure à laquelle vous souhaitez récupérer votre commande
+          Sélectionnez l'heure à laquelle vous souhaitez récupérer votre commande aujourd'hui
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Sélection du jour */}
+        {/* Affichage du jour (aujourd'hui seulement) */}
         <div>
           <label className="text-sm font-medium mb-2 block">Jour de retrait</label>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {getNextDays(7).map((date) => (
-              <Button
-                key={date.toISOString()}
-                variant={selectedDate.toDateString() === date.toDateString() ? "default" : "outline"}
-                className={`flex-shrink-0 ${
-                  selectedDate.toDateString() === date.toDateString()
-                    ? "bg-orange-500 hover:bg-orange-600"
-                    : ""
-                }`}
-                onClick={() => setSelectedDate(date)}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                {formatDate(date)}
-              </Button>
-            ))}
+          <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg border border-orange-200">
+            <Calendar className="h-5 w-5 text-orange-600" />
+            <span className="font-semibold text-orange-700">
+              {new Date().toLocaleDateString('fr-FR', { 
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long',
+                year: 'numeric'
+              })}
+            </span>
           </div>
         </div>
 
         {/* Sélection du créneau */}
         <div>
-          <label className="text-sm font-medium mb-2 block">Créneau horaire</label>
+          <label className="text-sm font-medium mb-2 block">Créneau horaire disponible</label>
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/logo"
+import { NotificationBell } from "@/components/notification-bell"
 import {
   ArrowLeft,
   Package,
@@ -507,12 +508,7 @@ export default function CommandesPage() {
                 Favoris
               </Button>
 
-              <Button variant="ghost" size="sm" className="relative hover:bg-orange-50">
-                <Bell className="h-5 w-5 text-gray-600" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-orange-500 text-white text-xs">
-                  3
-                </Badge>
-              </Button>
+              <NotificationBell />
 
               <div 
                 className="flex items-center space-x-2 cursor-pointer hover:bg-orange-50 rounded-lg p-2 transition-colors"
@@ -593,15 +589,10 @@ export default function CommandesPage() {
                       Mon Profil
                     </Button>
 
-                    <Button variant="ghost" className="justify-start relative" asChild>
-                      <div>
-                        <Bell className="h-5 w-5 mr-2" />
-                        Notifications
-                        <Badge className="ml-auto h-5 w-5 rounded-full p-0 flex items-center justify-center bg-orange-500 text-white text-xs">
-                          3
-                        </Badge>
-                      </div>
-                    </Button>
+                    <div className="flex items-center justify-start">
+                      <NotificationBell />
+                      <span className="ml-2">Notifications</span>
+                    </div>
                   </div>
                 </SheetContent>
               </Sheet>
@@ -630,6 +621,11 @@ export default function CommandesPage() {
         {/* Orders List */}
         {!authLoading && !ordersLoading && user && orders.length > 0 && (
           <div className="space-y-4">
+            <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-700 font-medium">
+                📋 Vous consultez vos commandes en attente. Une fois prêtes, vous recevrez une notification !
+              </p>
+            </div>
             {orders.map((order, orderIndex) => (
             <Card
               key={order.id || `order-${orderIndex}`}
