@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import Image from "next/image"
 
 interface Slide {
   image: string
@@ -61,13 +60,13 @@ export function FoodSlider() {
   return (
     <div className="relative w-full max-w-5xl mx-auto">
       <div className="relative aspect-[4/3] md:aspect-[16/9] rounded-2xl overflow-hidden bg-muted">
-        <Image
-          src={getImageSrc(slides[currentSlide]?.image)}
-          alt={slides[currentSlide]?.title ?? "Slide image"}
+        <img
+          src={slides[currentSlide].image}
+          alt={slides[currentSlide].title}
           className="w-full h-full object-cover"
-          width={1200}
-          height={675}
-          priority={false}
+          onError={(e) => {
+            e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450"%3E%3Crect fill="%23f3f4f6" width="600" height="450"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%239ca3af"%3EImage non disponible%3C/text%3E%3C/svg%3E';
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">

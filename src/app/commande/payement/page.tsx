@@ -38,7 +38,7 @@ export default function PaymentConfirmationPage() {
 
   const getTotalPrice = () =>
     cart.reduce((total, item) => {
-      const price = Number.parseInt(item.price.replace(/\D/g, "")) || 0
+      const price = typeof item.price === 'number' ? item.price : (Number.parseInt(String(item.price).replace(/\D/g, "")) || 0)
       return total + price * item.quantity
     }, 0)
 
@@ -125,8 +125,8 @@ export default function PaymentConfirmationPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-sm text-gray-900 truncate">{item.name}</h3>
-                    <p className="text-xs text-gray-600">{item.price} × {item.quantity}</p>
-                    <p className="text-sm font-bold text-orange-600">{(Number.parseInt(item.price.replace(/\D/g, "")) || 0) * item.quantity} FCFA</p>
+                    <p className="text-xs text-gray-600">{typeof item.price === 'number' ? `${item.price} FCFA` : item.price} × {item.quantity}</p>
+                    <p className="text-sm font-bold text-orange-600">{(typeof item.price === 'number' ? item.price : (Number.parseInt(String(item.price).replace(/\D/g, "")) || 0)) * item.quantity} FCFA</p>
                   </div>
                 </div>
               ))}

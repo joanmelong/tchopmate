@@ -1,73 +1,45 @@
-import { useState, useEffect } from 'react';
-
-export interface Notification {
-  id: string;
-  titre: string;
-  message: string;
-  dateEnvoi: string;
-  lu: boolean;
-  type: string;
-}
+import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabaseClient"
 
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [loading, setLoading] = useState(true)
 
-  // Charger les notifications depuis localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('tchopmate-notifications');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setNotifications(parsed);
-        updateUnreadCount(parsed);
-      } catch (e) {
-        console.error('Erreur chargement notifications:', e);
+    loadUnreadCount()
+
+    // Recharger toutes les 30 secondes
+    const interval = setInterval(loadUnreadCount, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const loadUnreadCount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setUnreadCount(0)
+        setLoading(false)
+        return
       }
+
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('lue', false)
+
+      if (error) {
+        console.error('Erreur chargement notifications:', error)
+        return
+      }
+
+      setUnreadCount(count || 0)
+    } catch (error) {
+      console.error('Erreur:', error)
+    } finally {
+      setLoading(false)
     }
-  }, []);
+  }
 
-  // Sauvegarder dans localStorage à chaque changement
-  useEffect(() => {
-    if (notifications.length > 0) {
-      localStorage.setItem('tchopmate-notifications', JSON.stringify(notifications));
-      updateUnreadCount(notifications);
-    }
-  }, [notifications]);
-
-  const updateUnreadCount = (notifs: Notification[]) => {
-    const count = notifs.filter(n => !n.lu).length;
-    setUnreadCount(count);
-  };
-
-  const addNotification = (notif: Omit<Notification, 'id' | 'dateEnvoi' | 'lu'>) => {
-    const newNotif: Notification = {
-      ...notif,
-      id: Date.now().toString(),
-      dateEnvoi: new Date().toISOString(),
-      lu: false,
-    };
-    
-    setNotifications(prev => [newNotif, ...prev]);
-  };
-
-  const markAsRead = (notifId: string) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === notifId ? { ...n, lu: true } : n)
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(n => ({ ...n, lu: true }))
-    );
-  };
-
-  return {
-    notifications,
-    unreadCount,
-    addNotification,
-    markAsRead,
-    markAllAsRead,
-  };
+  return { unreadCount, loading, refresh: loadUnreadCount }
 }

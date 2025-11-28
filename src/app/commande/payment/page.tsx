@@ -89,7 +89,7 @@ useEffect(() => {
 
   const getTotalPrice = () =>
     cart.reduce((total, item) => {
-      const price = Number.parseInt(item.price.replace(/\D/g, "")) || 0
+      const price = typeof item.price === 'number' ? item.price : (Number.parseInt(String(item.price).replace(/\D/g, "")) || 0)
       return total + price * item.quantity
     }, 0)
 
@@ -233,10 +233,14 @@ useEffect(() => {
       const data = await res.json()
       
       if (!res.ok) {
-        console.error('Erreur création commande BD:', data)
-        // Rediriger vers la page de succès quand même car la commande est en localStorage
+        console.error('Erreur création commande BD:', {
+          status: res.status,
+          statusText: res.statusText,
+          error: data.error,
+          data: data
+        })
+        alert(`Erreur lors de la création de la commande: ${data.error || 'Erreur inconnue'}`)
         setIsProcessing(false)
-        router.push(`/commande/success?orderId=${encodeURIComponent(newOrderId)}`)
         return
       }
       
@@ -358,7 +362,7 @@ useEffect(() => {
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-orange-600">
-                        {(Number.parseInt(item.price.replace(/\D/g, "")) || 0) * item.quantity} FCFA
+                        {(typeof item.price === 'number' ? item.price : Number.parseInt(String(item.price).replace(/\D/g, "")) || 0) * item.quantity} FCFA
                       </p>
                       <p className="text-xs text-gray-500 mt-1">Qty: {item.quantity}</p>
                     </div>
