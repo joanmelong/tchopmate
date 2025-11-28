@@ -119,12 +119,26 @@ export default function MenuPage() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Charger les favoris depuis la base de données
   useEffect(() => {
-    const savedFavorites = localStorage.getItem("tchopmate-favorites")
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites))
+    const loadFavorites = async () => {
+      if (!user) return
+      
+      const { data, error } = await supabase
+        .from('favoris')
+        .select('plat_id')
+        .eq('user_id', user.id)
+      
+      if (error) {
+        console.error('Erreur chargement favoris:', error)
+        return
+      }
+      
+      setFavorites(data?.map(f => f.plat_id) || [])
     }
-  }, [])
+    
+    loadFavorites()
+  }, [user])
 
   // Charger le panier depuis localStorage au montage
   useEffect(() => {
@@ -152,14 +166,41 @@ export default function MenuPage() {
     }
   }, [cart])
 
-  const toggleFavorite = (itemId: string) => {
-    setFavorites((prev) => {
-      if (prev.includes(itemId)) {
-        return prev.filter((id) => id !== itemId)
-      } else {
-        return [...prev, itemId]
+  const toggleFavorite = async (itemId: string) => {
+    if (!user) {
+      alert('Vous devez être connecté pour ajouter des favoris')
+      return
+    }
+
+    const isFavorite = favorites.includes(itemId)
+    
+    if (isFavorite) {
+      // Supprimer le favori
+      const { error } = await supabase
+        .from('favoris')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('plat_id', itemId)
+      
+      if (error) {
+        console.error('Erreur suppression favori:', error)
+        return
       }
-    })
+      
+      setFavorites(prev => prev.filter(id => id !== itemId))
+    } else {
+      // Ajouter le favori
+      const { error } = await supabase
+        .from('favoris')
+        .insert({ user_id: user.id, plat_id: itemId })
+      
+      if (error) {
+        console.error('Erreur ajout favori:', error)
+        return
+      }
+      
+      setFavorites(prev => [...prev, itemId])
+    }
   }
 
   // Charger les plats depuis les menus activés
@@ -189,6 +230,9 @@ export default function MenuPage() {
   const loadActiveMenuDishes = async () => {
     try {
       setLoading(true)
+      console.log("Début chargement des menus...")
+      const startTime = Date.now()
+      
       // Récupérer tous les menus activés avec leurs plats
       const { data: activeMenus, error } = await supabase
         .from('menu')
@@ -214,7 +258,14 @@ export default function MenuPage() {
         `)
         .eq('disponible', true)
 
-      if (error) throw error
+      const loadTime = Date.now() - startTime
+      console.log(`Menus chargés en ${loadTime}ms`)
+      console.log("Nombre de menus:", activeMenus?.length || 0)
+
+      if (error) {
+        console.error("Erreur chargement menus:", error)
+        throw error
+      }
 
       // Transformer les données pour correspondre au format attendu
       const dishes: Array<{ 
