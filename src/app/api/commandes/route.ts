@@ -17,10 +17,18 @@ const admin = createClient(url, serviceKey, {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("=== POST /api/commandes ===");
+    console.log("Headers:", {
+      authorization: request.headers.get("authorization") ? "présent" : "absent",
+      cookie: request.headers.get("cookie") ? "présent" : "absent",
+    });
+    
     // Vérifier l'authentification et récupérer les informations du client
     const client = await getClientFromRequest(request);
-    console.log(client)
+    console.log("Client récupéré:", client ? `ID: ${client.id}, ${client.prenom} ${client.nom}` : "null")
+    
     if (!client) {
+      console.error("Authentification échouée - client null");
       return NextResponse.json(
         { error: "Authentification requise. Veuillez vous connecter." },
         { status: 401 }

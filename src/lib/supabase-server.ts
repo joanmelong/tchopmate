@@ -152,6 +152,8 @@ export async function getClientFromRequest(
       .eq("user_id", userId)
       .maybeSingle(); // Utiliser maybeSingle pour ne pas lever d'erreur si aucune ligne
 
+    console.log("Recherche compte pour user_id:", userId, "Trouvé:", !!compte, "Erreur:", compteError?.message);
+
     // Si le compte n'existe pas, le créer automatiquement (premier login)
     if (!compte && !compteError) {
       console.log(`Création d'un nouveau compte pour user_id: ${userId}`);

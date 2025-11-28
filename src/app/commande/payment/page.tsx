@@ -233,10 +233,14 @@ useEffect(() => {
       const data = await res.json()
       
       if (!res.ok) {
-        console.error('Erreur création commande BD:', data)
-        // Rediriger vers la page de succès quand même car la commande est en localStorage
+        console.error('Erreur création commande BD:', {
+          status: res.status,
+          statusText: res.statusText,
+          error: data.error,
+          data: data
+        })
+        alert(`Erreur lors de la création de la commande: ${data.error || 'Erreur inconnue'}`)
         setIsProcessing(false)
-        router.push(`/commande/success?orderId=${encodeURIComponent(newOrderId)}`)
         return
       }
       
