@@ -30,6 +30,21 @@ export type GerantOrder = {
 };
 
 export class CommandeGerantService {
+  private static isSingleRestaurantMode(): boolean {
+    try {
+      return (process && process.env && (process.env.NEXT_PUBLIC_SINGLE_RESTAURANT === 'true')) || false
+    } catch (e) {
+      return false
+    }
+  }
+  private static shouldValidateRestaurantOwner(): boolean {
+    try {
+      // READ NEXT_PUBLIC_... for client builds, fallback to backend var if present
+      return (process && process.env && ((process.env.NEXT_PUBLIC_VALIDATE_GERANT_RESTAURANT === 'true') || (process.env.VALIDATE_GERANT_RESTAURANT === 'true'))) || false
+    } catch (e) {
+      return false
+    }
+  }
   // Helper: find the compte (profile) id for the current auth user
   private static async getCompteIdByAuthUser(): Promise<number | null> {
     try {
@@ -51,6 +66,9 @@ export class CommandeGerantService {
     }
   }
 
+  // The previous implementation enforced a restaurant->commande ownership
+  // check: this has been removed to decouple ordre from restaurant in the service layer.
+  // If needed, ownership checks should be implemented in the caller or via a dedicated policy.
   private static async getRestaurantIdForGerant(): Promise<string | null> {
     try {
       const compteId = await this.getCompteIdByAuthUser();
@@ -72,17 +90,18 @@ export class CommandeGerantService {
   static async fetchOrders(): Promise<GerantOrder[]> {
     console.log('[CommandeGerantService] fetchOrders: récupérer les commandes du restaurant via Supabase')
     try {
-      const restaurantId = await this.getRestaurantIdForGerant();
-      if (!restaurantId) {
+      // Optionally constrain to restaurant if validation is enabled
+      let query = supabase
+        .from('commande_plat')
+        .select('commande_id, quantite, plat_id, plat(nom, prix, image_url, description, categorie, temps_preparation)')
+      const shouldValidate = this.shouldValidateRestaurantOwner()
+      const restaurantId = shouldValidate ? await this.getRestaurantIdForGerant() : null
+      if (shouldValidate && !restaurantId) {
         console.warn('[CommandeGerantService] fetchOrders: pas de restaurant associé au gérant')
         return [];
       }
-
-      // Récupérer les lignes commande_plat pour ce restaurant
-      const { data: cpRows, error: cpError } = await supabase
-        .from('commande_plat')
-        .select('commande_id, quantite, plat_id, plat(nom, prix, image_url, description, categorie, temps_preparation)')
-        .filter('plat.restaurant_id', 'eq', restaurantId);
+      if (shouldValidate && restaurantId) query = query.filter('plat.restaurant_id', 'eq', restaurantId)
+      const { data: cpRows, error: cpError } = await query;
 
       if (cpError) {
         console.error('[CommandeGerantService] fetchOrders erreur fetch commande_plat:', cpError);
@@ -148,12 +167,6 @@ export class CommandeGerantService {
   static async getOrder(orderId: string): Promise<GerantOrder | null> {
     console.log('[CommandeGerantService] getOrder:', orderId)
     try {
-      // Optionally validate restaurant ownership
-      const restaurantId = await this.getRestaurantIdForGerant();
-      if (!restaurantId) {
-        console.warn('[CommandeGerantService] getOrder: pas de restaurant associé au gérant')
-        return null;
-      }
 
       // Récupérer la commande
       const { data: cmd, error: cmdErr } = await supabase
@@ -167,11 +180,15 @@ export class CommandeGerantService {
       }
 
       // Récupérer items pour la commande et vérifier qu'ils appartiennent au restaurant
-      const { data: itemsRows, error: itemsErr } = await supabase
+      // Fetch items and optionally validate restaurant ownership
+      const shouldValidateItems = this.shouldValidateRestaurantOwner()
+      const itemsRestaurantId = shouldValidateItems ? await this.getRestaurantIdForGerant() : null
+      let itemsQuery = supabase
         .from('commande_plat')
         .select('quantite, plat_id, plat(nom, prix, image_url, description, categorie, temps_preparation)')
         .eq('commande_id', orderId)
-        .filter('plat.restaurant_id', 'eq', restaurantId);
+      if (shouldValidateItems && itemsRestaurantId) itemsQuery = itemsQuery.filter('plat.restaurant_id', 'eq', itemsRestaurantId)
+      const { data: itemsRows, error: itemsErr } = await itemsQuery;
       if (itemsErr) {
         console.error('[CommandeGerantService] getOrder erreur items:', itemsErr);
         return null;
@@ -221,26 +238,24 @@ export class CommandeGerantService {
   static async updateOrderStatus(orderId: string, newStatus: string): Promise<boolean> {
     console.log('[CommandeGerantService] updateOrderStatus', orderId, '->', newStatus)
     try {
-      const restaurantId = await this.getRestaurantIdForGerant();
-      if (!restaurantId) {
-        console.warn('[CommandeGerantService] updateOrderStatus: pas de restaurant associé au gérant')
-        return false;
-      }
-
-      // Verify the order belongs to this restaurant
-      const { data: cpRows, error: cpError } = await supabase
-        .from('commande_plat')
-        .select('commande_id')
-        .eq('commande_id', orderId)
-        .filter('plat.restaurant_id', 'eq', restaurantId)
-        .limit(1);
-      if (cpError) {
-        console.error('[CommandeGerantService] updateOrderStatus erreur check belongs:', cpError)
-        return false;
-      }
-      if (!cpRows || cpRows.length === 0) {
-        console.warn('[CommandeGerantService] updateOrderStatus: order not linked to restaurant')
-        return false;
+      // Optionally validate restaurant owner before update
+      if (this.shouldValidateRestaurantOwner()) {
+        const rId = await this.getRestaurantIdForGerant()
+        if (!rId) {
+          console.warn('[CommandeGerantService] updateOrderStatus: no restaurant associated to gerant')
+          return false
+        }
+        let cpQuery = supabase.from('commande_plat').select('commande_id').eq('commande_id', orderId).limit(1)
+        if (rId) cpQuery = cpQuery.filter('plat.restaurant_id', 'eq', rId)
+        const { data: cpRows, error: cpError } = await cpQuery;
+        if (cpError) {
+          console.error('[CommandeGerantService] updateOrderStatus erreur check belongs:', cpError)
+          return false;
+        }
+        if (!cpRows || cpRows.length === 0) {
+          console.warn('[CommandeGerantService] updateOrderStatus: order not linked to restaurant')
+          return false;
+        }
       }
 
       const { error: updateError } = await supabase
@@ -264,25 +279,27 @@ export class CommandeGerantService {
   static async assignDelivery(orderId: string, livreurId: number | string): Promise<boolean> {
     console.log('[CommandeGerantService] assignDelivery', orderId, '->', livreurId)
     try {
-      const restaurantId = await this.getRestaurantIdForGerant();
-      if (!restaurantId) {
-        console.warn('[CommandeGerantService] assignDelivery: pas de restaurant associé au gérant')
-        return false;
-      }
-
-      const { data: cpRows, error: cpError } = await supabase
-        .from('commande_plat')
-        .select('commande_id')
-        .eq('commande_id', orderId)
-        .filter('plat.restaurant_id', 'eq', restaurantId)
-        .limit(1);
-      if (cpError) {
-        console.error('[CommandeGerantService] assignDelivery erreur check belongs:', cpError)
-        return false;
-      }
-      if (!cpRows || cpRows.length === 0) {
-        console.warn('[CommandeGerantService] assignDelivery: order not linked to restaurant')
-        return false;
+      // Optionally validate restaurant owner before assignDelivery
+      if (this.shouldValidateRestaurantOwner()) {
+        const rId = await this.getRestaurantIdForGerant()
+        if (!rId) {
+          console.warn('[CommandeGerantService] assignDelivery: no restaurant associated to gerant')
+          return false
+        }
+        const { data: cpRows, error: cpError } = await supabase
+          .from('commande_plat')
+          .select('commande_id')
+          .eq('commande_id', orderId)
+          .filter('plat.restaurant_id', 'eq', rId)
+          .limit(1);
+        if (cpError) {
+          console.error('[CommandeGerantService] assignDelivery erreur check belongs:', cpError)
+          return false;
+        }
+        if (!cpRows || cpRows.length === 0) {
+          console.warn('[CommandeGerantService] assignDelivery: order not linked to restaurant')
+          return false;
+        }
       }
 
       const updates: any = { statut: 'en_livraison' };
@@ -313,25 +330,27 @@ export class CommandeGerantService {
   static async cancelOrder(orderId: string): Promise<boolean> {
     console.log('[CommandeGerantService] cancelOrder', orderId)
     try {
-      const restaurantId = await this.getRestaurantIdForGerant();
-      if (!restaurantId) {
-        console.warn('[CommandeGerantService] cancelOrder: pas de restaurant associé au gérant')
-        return false;
-      }
-
-      const { data: cpRows, error: cpError } = await supabase
-        .from('commande_plat')
-        .select('commande_id')
-        .eq('commande_id', orderId)
-        .filter('plat.restaurant_id', 'eq', restaurantId)
-        .limit(1);
-      if (cpError) {
-        console.error('[CommandeGerantService] cancelOrder erreur check belongs:', cpError)
-        return false;
-      }
-      if (!cpRows || cpRows.length === 0) {
-        console.warn('[CommandeGerantService] cancelOrder: order not linked to restaurant')
-        return false;
+      // Optionally validate restaurant owner before cancel
+      if (this.shouldValidateRestaurantOwner()) {
+        const rId = await this.getRestaurantIdForGerant()
+        if (!rId) {
+          console.warn('[CommandeGerantService] cancelOrder: no restaurant associated to gerant')
+          return false
+        }
+        const { data: cpRows, error: cpError } = await supabase
+          .from('commande_plat')
+          .select('commande_id')
+          .eq('commande_id', orderId)
+          .filter('plat.restaurant_id', 'eq', rId)
+          .limit(1);
+        if (cpError) {
+          console.error('[CommandeGerantService] cancelOrder erreur check belongs:', cpError)
+          return false;
+        }
+        if (!cpRows || cpRows.length === 0) {
+          console.warn('[CommandeGerantService] cancelOrder: order not linked to restaurant')
+          return false;
+        }
       }
 
       const { error: updateError } = await supabase.from('commande').update({ statut: 'annule' }).eq('id_commande', orderId);

@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Scanner } from './scanner'
 
 interface ScannerDialogProps {
@@ -14,6 +14,9 @@ export function ScannerDialog({ open, onOpenChange, onScanned }: ScannerDialogPr
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Scanner QR - Validation commande</DialogTitle>
+        </DialogHeader>
         <Scanner
           onScan={(decodedText) => {
             onScanned(decodedText)

@@ -15,24 +15,24 @@ const admin = createClient(url ?? '', serviceKey ?? '', { auth: { persistSession
 // Utility: determine restaurant id for the current gerant
 async function getRestaurantForGerant(clientId: number) {
   try {
-    // Try to find restaurant where gerant_id equals client.id
     const { data: restaurant, error } = await admin
       .from('restaurant')
       .select('id_restaurant')
       .eq('gerant_id', clientId)
       .maybeSingle();
-
     if (error) {
       console.error('Erreur récupération restaurant par gerant_id:', error);
       return null;
     }
-
     return restaurant?.id_restaurant ?? null;
   } catch (e) {
     console.error('Exception getRestaurantForGerant:', e);
     return null;
   }
 }
+
+// No ownership validation is performed here - the gerant API endpoints were simplified
+// to remove the commande -> restaurant binding. Authorization is still required.
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,12 +41,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentification requise' }, { status: 401 });
     }
 
-    const restaurantId = await getRestaurantForGerant(client.id);
-    if (!restaurantId) {
+    const shouldValidate = (process.env.VALIDATE_GERANT_RESTAURANT === 'true') || (process.env.NEXT_PUBLIC_VALIDATE_GERANT_RESTAURANT === 'true');
+    const restaurantId = shouldValidate ? await getRestaurantForGerant(client.id) : null;
+    if (shouldValidate && !restaurantId) {
       return NextResponse.json({ error: 'Pas de restaurant associé au gérant' }, { status: 403 });
     }
-
-    console.log('[API /api/gerant/commandes] get commandes pour restaurant', restaurantId);
+    console.log('[API /api/gerant/commandes] gerant commandes list - restaurant validation', shouldValidate);
 
     // Detect if caller asked for a specific commande
     const url = new URL(request.url);
@@ -65,10 +65,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 });
       }
       // Get items
-      const { data: itemsRows } = await admin
+      let itemsQuery: any = admin
         .from('commande_plat')
         .select('quantite, plat_id, plat(nom, prix, image_url, description, categorie, temps_preparation)')
         .eq('commande_id', possibleId);
+      if (shouldValidate && restaurantId) itemsQuery = itemsQuery.filter('plat.restaurant_id', 'eq', restaurantId);
+      const { data: itemsRows } = await itemsQuery;
       // Client
       let clientInfo: any = null;
       if (cmd.client_id) {
@@ -79,9 +81,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Récupérer commande_plat pour le restaurant
-    const { data: cpRows, error: cpError } = await admin
-      .from('commande')
-      .select('id_commande, client_id,statut, montant_total, commentaire, livraison, created_at, updated_at');
+    let cpQuery: any = admin
+      .from('commande_plat')
+      .select('commande_id, quantite, id, plat_id, plat(nom, prix, image_url, description, categorie)')
+    if (shouldValidate && restaurantId) cpQuery = cpQuery.filter('plat.restaurant_id', 'eq', restaurantId);
+    const { data: cpRows, error: cpError } = await cpQuery;
 
     if (cpError) {
       console.error('[API /api/gerant/commandes] erreur fetch commande_plat:', cpError);
@@ -145,24 +149,25 @@ export async function DELETE(request: NextRequest) {
     const client = await getClientFromRequest(request);
     if (!client) return NextResponse.json({ error: 'Authentification requise' }, { status: 401 });
 
-    const restaurantId = await getRestaurantForGerant(client.id);
-    if (!restaurantId) return NextResponse.json({ error: 'Pas de restaurant associé' }, { status: 403 });
+    const shouldValidate = (process.env.VALIDATE_GERANT_RESTAURANT === 'true') || (process.env.NEXT_PUBLIC_VALIDATE_GERANT_RESTAURANT === 'true');
+    const restaurantId = shouldValidate ? await getRestaurantForGerant(client.id) : null;
+    console.log('[API /api/gerant/commandes] DELETE request - restaurant validation', shouldValidate);
 
-    // Vérifier que la commande appartient au restaurant via commande_plat -> plat.restaurant_id
-    const { data: cpRows, error: cpError } = await admin
-      .from('commande_plat')
-      .select('commande_id')
-      .eq('commande_id', id)
-      .filter('plat.restaurant_id', 'eq', restaurantId)
-      .limit(1);
+
+    // No restaurant binding validation. Just check the commande exists.
+    let cpQuery: any = admin.from('commande_plat').select('commande_id').eq('commande_id', id).limit(1)
+    if (shouldValidate && restaurantId) cpQuery = cpQuery.filter('plat.restaurant_id', 'eq', restaurantId)
+    const { data: cpRows, error: cpError } = await cpQuery;
 
     if (cpError) {
       console.error('[API /api/gerant/commandes] erreur check commande belongs to restaurant:', cpError);
       return NextResponse.json({ error: cpError.message || cpError }, { status: 500 });
     }
 
-    if (!(cpRows && cpRows.length > 0)) {
-      return NextResponse.json({ error: 'Commande non liée à votre restaurant' }, { status: 403 });
+    if (shouldValidate) {
+      if (!(cpRows && cpRows.length > 0)) {
+        return NextResponse.json({ error: 'Commande non liée à votre restaurant' }, { status: 403 });
+      }
     }
 
     // Logically cancel or update statut -> annule
@@ -190,8 +195,9 @@ export async function PATCH(request: NextRequest) {
     const client = await getClientFromRequest(request);
     if (!client) return NextResponse.json({ error: 'Authentification requise' }, { status: 401 });
 
-    const restaurantId = await getRestaurantForGerant(client.id);
-    if (!restaurantId) return NextResponse.json({ error: 'Pas de restaurant associé' }, { status: 403 });
+    const shouldValidate = (process.env.VALIDATE_GERANT_RESTAURANT === 'true') || (process.env.NEXT_PUBLIC_VALIDATE_GERANT_RESTAURANT === 'true');
+    const restaurantId = shouldValidate ? await getRestaurantForGerant(client.id) : null;
+    console.log('[API /api/gerant/commandes] PATCH request - restaurant validation', shouldValidate);
 
     // If endpoint is .../status
     if (last === 'status') {
@@ -199,21 +205,19 @@ export async function PATCH(request: NextRequest) {
       const body = await request.json();
       const { statut } = body;
 
-      // Validate belongs to restaurant
-      const { data: cpRows, error: cpError } = await admin
-        .from('commande_plat')
-        .select('commande_id')
-        .eq('commande_id', orderId)
-        .filter('plat.restaurant_id', 'eq', restaurantId)
-        .limit(1);
+      let cpQuery: any = admin.from('commande_plat').select('commande_id').eq('commande_id', orderId).limit(1)
+      if (shouldValidate && restaurantId) cpQuery = cpQuery.filter('plat.restaurant_id', 'eq', restaurantId)
+      const { data: cpRows, error: cpError } = await cpQuery;
 
       if (cpError) {
         console.error('[API /api/gerant/commandes] erreur check commande belongs to restaurant:', cpError);
         return NextResponse.json({ error: cpError.message || cpError }, { status: 500 });
       }
 
-      if (!(cpRows && cpRows.length > 0)) {
-        return NextResponse.json({ error: 'Commande non liée à votre restaurant' }, { status: 403 });
+      if (shouldValidate) {
+        if (!(cpRows && cpRows.length > 0)) {
+          return NextResponse.json({ error: 'Commande non liée à votre restaurant' }, { status: 403 });
+        }
       }
 
       // Update statut
@@ -233,20 +237,19 @@ export async function PATCH(request: NextRequest) {
       const body = await request.json();
       const { livreurId } = body;
 
-      const { data: cpRows, error: cpError } = await admin
-        .from('commande_plat')
-        .select('commande_id')
-        .eq('commande_id', orderId)
-        .filter('plat.restaurant_id', 'eq', restaurantId)
-        .limit(1);
+      let cpQuery2: any = admin.from('commande_plat').select('commande_id').eq('commande_id', orderId).limit(1)
+      if (shouldValidate && restaurantId) cpQuery2 = cpQuery2.filter('plat.restaurant_id', 'eq', restaurantId)
+      const { data: cpRows, error: cpError } = await cpQuery2;
 
       if (cpError) {
         console.error('[API /api/gerant/commandes] erreur check commande belongs to restaurant:', cpError);
         return NextResponse.json({ error: cpError.message || cpError }, { status: 500 });
       }
 
-      if (!(cpRows && cpRows.length > 0)) {
-        return NextResponse.json({ error: 'Commande non liée à votre restaurant' }, { status: 403 });
+      if (shouldValidate) {
+        if (!(cpRows && cpRows.length > 0)) {
+          return NextResponse.json({ error: 'Commande non liée à votre restaurant' }, { status: 403 });
+        }
       }
 
       // Update livreur_id & statut

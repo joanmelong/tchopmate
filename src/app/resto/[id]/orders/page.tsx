@@ -6,11 +6,16 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye, CheckCircle, Clock, AlertCircle } from "lucide-react"
 import { OrderDetailDialog } from "@/components/admin/order-detail-dialog"
-import { ScannerDialog } from '@/components/qrcode/scanner-dialog'
+// ScannerDialog removed in favor of the full page scanner
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function OrdersPage() {
-  const [scannerOpen, setScannerOpen] = useState(false)
+  // Scanner page is used instead of modal
+  const router = useRouter()
+  const params = useParams()
+  const gerantId = params.id as string
+  const searchParams = useSearchParams()
   const [showDetail, setShowDetail] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [orders, setOrders] = useState<any[]>([])
@@ -21,7 +26,6 @@ export default function OrdersPage() {
     const load = async () => {
       try {
         setLoading(true)
-        console.log('[OrdersPage] Fetch commandes pour restaurant')
         const fetched = await (await import('@/services/CommandeGerant')).CommandeGerantService.fetchOrders()
         if (!mounted) return
         const normalize = (s?: string) => {
@@ -31,7 +35,13 @@ export default function OrdersPage() {
           if (v.includes('cours') || v.includes('en_cours') || v.includes('en cours')) return 'en cours'
           return 'en attente'
         }
-        setOrders((fetched || []).map((o: any) => ({ ...o, status: normalize(o.statut) })))
+        setOrders((fetched || []).map((o: any) => ({
+          id: o.id_commande || o.id,
+          customer: o.client ? `${o.client.prenom || ''} ${o.client.nom || ''}`.trim() : (o.clientName || o.client_name || 'Client'),
+          total: o.montant_total || o.total || 0,
+          items: o.items || [],
+          status: normalize(o.statut),
+        })))
       } catch (e) {
         console.error('[OrdersPage] Erreur fetch commandes:', e)
       } finally {
@@ -42,9 +52,38 @@ export default function OrdersPage() {
     return () => { mounted = false }
   }, [])
 
-  const pendingOrders = orders.filter((o) => o.status === "aucun")
-  const inProgressOrders = orders.filter((o) => o.status === "en cours")
-  const deliveredOrders = orders.filter((o) => o.status === "livrée")
+  useEffect(() => {
+    // If we came back from the scanner callback with an updated order id, refresh that order
+    const updatedOrderId = searchParams.get('updatedOrderId')
+    if (!updatedOrderId) return
+    ;(async () => {
+      try {
+        console.log('[OrdersPage] refetch updated order', updatedOrderId)
+        const fetched = await (await import('@/services/CommandeGerant')).CommandeGerantService.getOrder(updatedOrderId)
+        if (fetched) {
+          const normalize = (s?: string) => {
+            if (!s) return 'en attente'
+            const v = String(s).toLowerCase()
+            if (v.includes('livr')) return 'livrée'
+            if (v.includes('cours') || v.includes('en_cours') || v.includes('en cours')) return 'en cours'
+            return 'en attente'
+          }
+          const normalized = {
+            id: fetched.id_commande || fetched.id,
+            status: normalize(fetched.statut),
+          }
+          setOrders((prev) => prev.map((o) => (o.id === normalized.id ? { ...o, status: normalized.status } : o)))
+        }
+      } catch (e) {
+        console.error('[OrdersPage] error re-fetching updated order', e)
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get('updatedOrderId')])
+
+  const pendingOrders = orders.filter((o) => o.status === 'en attente' || o.status === 'aucun')
+  const inProgressOrders = orders.filter((o) => o.status === 'en cours')
+  const deliveredOrders = orders.filter((o) => o.status === 'livrée')
 
   const markAsDelivered = async (orderId: string) => {
     console.log('[OrdersPage] markAsDelivered', orderId)
@@ -58,23 +97,7 @@ export default function OrdersPage() {
     if (ok) setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: 'en cours' } : o)))
   }
 
-  const onScanned = async (decodedText: string) => {
-    console.log('[OrdersPage] onScanned', decodedText)
-    try {
-      const mod = await import('@/services/CommandeScanner')
-      const scannedOrder = await mod.CommandeScannerService.processScannedQRCode(decodedText)
-      if (!scannedOrder) {
-        console.warn('[OrdersPage] scanned order not found or invalid')
-        return
-      }
-      // Update list to mark it delivered
-      setOrders((prev) => prev.map((o) => (o.id === scannedOrder.id ? { ...o, status: 'livrée' } : o)))
-      setSelectedOrder(scannedOrder)
-      setShowDetail(true)
-    } catch (e) {
-      console.error('[OrdersPage] onScanned error', e)
-    }
-  }
+  // Scanning is handled via the dedicated page; not needed here
 
   const OrderRow = ({ order }: { order: any }) => (
     <div className="border border-orange-100 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
@@ -150,7 +173,17 @@ export default function OrdersPage() {
         <h1 className="text-3xl font-bold text-gray-900">Gestion des commandes</h1>
         <p className="text-gray-600 mt-1">Gérez les commandes en temps réel</p>
         <div className="mt-3">
-          <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => setScannerOpen(true)}>
+          <Button
+            className="bg-orange-500 hover:bg-orange-600 text-white"
+            onClick={() => {
+              const callback = encodeURIComponent(`${window.location.origin}/scan-result?id=${gerantId}`)
+              const scanUrl = `https://scanapp.org/?callback_url=${callback}`
+              // Ouvre le monitor de fichier (scan-result) dans notre app
+              router.push(`/scan-result?id=${gerantId}`)
+              // Et ouvre scanapp dans un nouvel onglet pour effectuer le scan
+              window.open(scanUrl, '_blank')
+            }}
+          >
             Scanner QR
           </Button>
         </div>
@@ -238,7 +271,7 @@ export default function OrdersPage() {
         onMarkAsDelivered={markAsDelivered}
       />
 
-      <ScannerDialog open={scannerOpen} onOpenChange={setScannerOpen} onScanned={onScanned} />
+      {/* ScannerDialog was removed - scanning is handled on a dedicated page */}
     </div>
   )
 }
