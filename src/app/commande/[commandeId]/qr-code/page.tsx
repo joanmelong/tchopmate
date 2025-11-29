@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 
 export default function QRCodePage() {
   const { id } = useParams(); // UUID venant de Supabase
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<{ id: number; commande_id: number; qr_code_data: string } | null>(null);
 
   useEffect(() => {
     const fetchOrder = async () => {

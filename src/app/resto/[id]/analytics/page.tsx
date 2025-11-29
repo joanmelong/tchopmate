@@ -26,7 +26,7 @@ const COLORS = ["#f97316", "#fbbf24", "#60a5fa"]
 
 export default function AnalyticsPage() {
   const params = useParams();
-  const gerantId = params.id as string;
+  // const gerantId = params.id as string; // Removed unused variable
 
   // Hook de protection de route avec vérification du rôle
   const { user, isLoading: authLoading } = useProtectedRoute({

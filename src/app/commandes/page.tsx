@@ -17,7 +17,6 @@ import {
   User,
   Calendar,
   CreditCard,
-  Bell,
   Menu,
   ShoppingBag,
   Utensils,
@@ -286,8 +285,8 @@ export default function CommandesPage() {
           // Ne pas effacer les commandes si l'API ne retourne rien
           // Garder les données localStorage existantes
         }
-      } catch (e: any) {
-        console.warn('Erreur synchronisation API:', e?.message || e)
+      } catch (e: unknown) {
+        console.warn('Erreur synchronisation API:', e instanceof Error ? e.message : String(e))
         // Ne pas effacer les commandes en cas d'erreur API
         // Garder les données localStorage existantes
       } finally {
@@ -713,7 +712,7 @@ export default function CommandesPage() {
             <div className="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
               <User className="h-10 w-10 text-red-500" />
             </div>
-            <p className="text-gray-900 text-xl mb-2 font-bold">Vous n'êtes pas connecté</p>
+            <p className="text-gray-900 text-xl mb-2 font-bold">Vous n&apos;êtes pas connecté</p>
             <p className="text-gray-600 mb-6">Connectez-vous pour voir vos commandes</p>
             <Button
               className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-md"

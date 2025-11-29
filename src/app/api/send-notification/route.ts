@@ -94,11 +94,11 @@ export async function POST(request: NextRequest) {
       message: 'Email envoyé avec succès' 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erreur envoi email:', error);
     return NextResponse.json({ 
       success: false, 
-      message: error.message 
+      message: error instanceof Error ? error.message : 'Erreur inconnue' 
     }, { status: 500 });
   }
 }

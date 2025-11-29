@@ -7,15 +7,11 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
-  UtensilsCrossed,
   Search,
   Eye,
   Phone,
   Mail,
   ShoppingBag,
-  LayoutDashboard,
-  Users,
-  BarChart3,
   Calendar,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"

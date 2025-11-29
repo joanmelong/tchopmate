@@ -9,17 +9,13 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
-  UtensilsCrossed,
   Search,
   Eye,
   Clock,
   User,
   Phone,
   MapPin,
-  LayoutDashboard,
   ShoppingBag,
-  Users,
-  BarChart3,
   Package,
 } from "lucide-react"
 import { AdminSidebar } from "@/components/ui/admin-sidebar"

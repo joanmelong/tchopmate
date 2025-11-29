@@ -92,7 +92,7 @@ export default function TestNotificationPage() {
               </h1>
             </div>
             <p className="text-gray-600 ml-14">
-              Testez l'envoi d'emails et voyez la cloche s'incrémenter en temps réel
+              Testez l&apos;envoi d&apos;emails et voyez la cloche s&apos;incrémenter en temps réel
             </p>
           </div>
           
@@ -234,7 +234,7 @@ export default function TestNotificationPage() {
                 </p>
                 {emailStatus.success && (
                   <p className="text-xs text-green-500 mt-2">
-                    🔔 Regardez la cloche en haut à droite - elle s'est incrémentée !
+                    🔔 Regardez la cloche en haut à droite - elle s&apos;est incrémentée !
                   </p>
                 )}
               </div>
@@ -266,7 +266,7 @@ export default function TestNotificationPage() {
 
           <div className="mt-4 space-y-2">
             <p className="text-xs text-gray-500 text-center">
-              💡 L'email sera envoyé RÉELLEMENT et la cloche s'incrémentera automatiquement
+              💡 L&apos;email sera envoyé RÉELLEMENT et la cloche s&apos;incrémentera automatiquement
             </p>
           </div>
         </div>

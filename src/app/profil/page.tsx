@@ -149,11 +149,11 @@ export default function ProfilPage() {
         title: "Succès",
         description: "Votre profil a été mis à jour",
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erreur sauvegarde profil:", error)
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de sauvegarder le profil",
+        description: error instanceof Error ? error.message : "Impossible de sauvegarder le profil",
         variant: "destructive",
       })
     } finally {
@@ -317,7 +317,7 @@ export default function ProfilPage() {
               />
               <div className="flex items-center gap-2 mt-2">
                 <div className="h-1 w-1 rounded-full bg-gray-400"></div>
-                <p className="text-xs text-gray-500">L'email ne peut pas être modifié pour des raisons de sécurité</p>
+                <p className="text-xs text-gray-500">L&apos;email ne peut pas être modifié pour des raisons de sécurité</p>
               </div>
             </div>
 

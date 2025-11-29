@@ -124,12 +124,13 @@ export function AdminSettingsDialog({ open, onOpenChange }: AdminSettingsDialogP
       })
 
       onOpenChange(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erreur sauvegarde:", error)
-      setError(error.message || "Erreur lors de la sauvegarde")
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de la sauvegarde"
+      setError(errorMessage)
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de sauvegarder le profil",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {

@@ -35,7 +35,7 @@ export default function PaymentPage() {
 useEffect(() => {
   let isMounted = true
 
-  const handleSession = (session: any | null) => {
+  const handleSession = (session: { user?: any; access_token?: string } | null) => {
     if (isMounted) {
       if (session?.user && session.access_token) {
         // L'utilisateur est connecté. On stocke le token et on arrête le chargement.
@@ -288,7 +288,7 @@ useEffect(() => {
       setIsProcessing(false)
       // Rediriger vers la page de succès
       router.push(`/commande/success?orderId=${encodeURIComponent(newOrderId)}`)
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Exception création commande:', e)
       const newOrderId = `CMD-${Date.now()}`
       setIsProcessing(false)

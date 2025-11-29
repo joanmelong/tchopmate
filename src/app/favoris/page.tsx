@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/logo"
 import {
-  Bell,
   Clock,
   Star,
   ArrowLeft,
@@ -31,7 +30,7 @@ import type { User } from "@supabase/supabase-js"
 export default function FavorisPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
-  const [favoriteDishes, setFavoriteDishes] = useState<any[]>([])
+  const [favoriteDishes, setFavoriteDishes] = useState<Array<{ id: number; nom: string; prix: number; image_url?: string; description?: string; restaurant_id: string }>>([])
   const [loading, setLoading] = useState(true)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -89,7 +88,7 @@ export default function FavorisPage() {
         }
         
         // Transformer les données pour l'affichage
-        const dishes = data?.map((f: any) => {
+        const dishes = data?.map((f: { plat: any }) => {
           const plat = Array.isArray(f.plat) ? f.plat[0] : f.plat
           return {
             id: plat.id,
@@ -132,13 +131,13 @@ export default function FavorisPage() {
     setFavoriteDishes(prev => prev.filter(dish => dish.id !== itemId))
   }
 
-  const addToCart = (item: any) => {
+  const addToCart = (item: { id: number; name: string; price: number; image?: string }) => {
     // Récupérer le panier actuel
     const savedCart = localStorage.getItem("tchopmate-cart")
     const cart = savedCart ? JSON.parse(savedCart) : []
     
     // Ajouter l'item
-    const existingItem = cart.find((cartItem: any) => cartItem.id === item.id)
+    const existingItem = cart.find((cartItem: { id: number; quantity: number }) => cartItem.id === item.id)
     if (existingItem) {
       existingItem.quantity += 1
     } else {

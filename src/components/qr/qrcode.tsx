@@ -13,7 +13,7 @@ export default function DeprecatedQRCode() {
   return (
     <div className="p-6 text-center">
       <h2 className="font-bold">Composant QR Code (déprécié)</h2>
-      <p className="text-sm text-gray-600">Ce composant est conservé pour compatibilité mais n'est plus utilisé. Voir <code>components/qrcode</code>.</p>
+      <p className="text-sm text-gray-600">Ce composant est conservé pour compatibilité mais n&apos;est plus utilisé. Voir <code>components/qrcode</code>.</p>
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, CheckCircle, Clock, AlertCircle, Loader2, RefreshCw } from "lucide-react"
+import { Eye, CheckCircle, AlertCircle, Loader2, RefreshCw } from "lucide-react"
 import { OrderDetailDialog } from "@/components/admin/order-detail-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supabase } from "@/lib/supabaseClient"
@@ -59,7 +59,7 @@ export default function OrdersPage() {
       const commandes = data.commandes || []
 
       // Transformer les données
-      const transformedOrders: Order[] = commandes.map((cmd: any) => {
+      const transformedOrders: Order[] = commandes.map((cmd: { id_commande: number; statut: string; created_at: string; montant_total: number; client?: { prenom?: string; nom?: string }; items?: Array<{ name: string; qty: number; price: number }> }) => {
         let customerName = "Client inconnu"
         
         if (cmd.client?.prenom && cmd.client?.nom) {
@@ -75,7 +75,7 @@ export default function OrdersPage() {
         console.log("Client pour commande:", cmd.id_commande, customerName, cmd.client)
         
         const items: OrderItem[] = cmd.items?.length > 0 
-          ? cmd.items.map((item: any) => ({
+          ? cmd.items.map((item: { name: string; qty: number; price: number }) => ({
               name: item.name,
               qty: item.qty,
               price: `${item.price} FCFA`,

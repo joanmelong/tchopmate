@@ -34,8 +34,8 @@ export class ApiOrderRepository implements IOrderRepository {
       const commandes = data.commandes || [];
       
       // Convertir les données de l'API vers nos entités Order
-      const orders = commandes.map((cmd: any) => {
-        const items = cmd.items?.map((item: any) => new OrderItem({
+      const orders = commandes.map((cmd: { id_commande: number; statut: string; created_at: string; montant_total: number; items?: Array<{ plat_id?: number; name?: string; qty?: number; price?: number }> }) => {
+        const items = cmd.items?.map((item: { plat_id?: number; name?: string; qty?: number; price?: number }) => new OrderItem({
           platId: item.plat_id || 0,
           platNom: item.name || 'Plat inconnu',
           quantite: item.qty || 1,
@@ -90,7 +90,7 @@ export class ApiOrderRepository implements IOrderRepository {
     return [];
   }
 
-  async create(data: any): Promise<Order> {
+  async create(data: { studentId: string; items: Array<{ platId: number; quantity: number }> }): Promise<Order> {
     throw new Error('Méthode create non implémentée pour ApiOrderRepository');
   }
 

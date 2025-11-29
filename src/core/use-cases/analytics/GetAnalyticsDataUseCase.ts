@@ -78,7 +78,7 @@ export class GetAnalyticsDataUseCase {
     };
   }
 
-  private generateDailySalesData(orders: any[], days: number): DailySalesData[] {
+  private generateDailySalesData(orders: Array<{ totalPrice: number; createdAt: Date }>, days: number): DailySalesData[] {
     const salesByDay = new Map<string, { sales: number; orders: number }>();
     
     // Initialiser tous les jours avec 0
@@ -114,7 +114,7 @@ export class GetAnalyticsDataUseCase {
     return days[date.getDay()];
   }
 
-  private generateCategoryData(orders: any[]): CategoryData[] {
+  private generateCategoryData(orders: Array<{ items: Array<{ platNom: string; quantite: number }> }>): CategoryData[] {
     // Pour l'instant, simulation des catégories
     // TODO: Implémenter la logique réelle basée sur les types de plats
     const totalOrders = orders.length;
@@ -134,12 +134,12 @@ export class GetAnalyticsDataUseCase {
     ];
   }
 
-  private async getPopularDishes(restaurantId: string, orders: any[]): Promise<PopularDish[]> {
+  private async getPopularDishes(restaurantId: string, orders: Array<{ items: Array<{ platNom: string; quantite: number; prixUnitaire: number }> }>): Promise<PopularDish[]> {
     // Compter les plats par ID
     const dishCounts = new Map<number, { count: number; revenue: number; name: string }>();
     
     orders.forEach(order => {
-      order.items.forEach((item: any) => {
+      order.items.forEach((item: { platNom: string; quantite: number; prixUnitaire: number }) => {
         const existing = dishCounts.get(item.platId);
         if (existing) {
           existing.count += item.quantite;

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { SupabaseOrderRepository } from '@/data/repositories/SupabaseOrderRepository';
 import { SupabaseDishRepository } from '@/data/repositories/SupabaseDishRepository';
 import { User } from '@/core/entities/User';
+import { createClient } from '@supabase/supabase-js';
+import { ApiOrderRepository } from '@/data/repositories/ApiOrderRepository';
 
 interface DataDebuggerProps {
   user: User | null;
@@ -13,7 +15,7 @@ interface DataDebuggerProps {
 }
 
 export function DataDebugger({ user, restaurantId }: DataDebuggerProps) {
-  const [debugData, setDebugData] = useState<any>(null);
+  const [debugData, setDebugData] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(false);
 
   const testData = async () => {
@@ -27,7 +29,7 @@ export function DataDebugger({ user, restaurantId }: DataDebuggerProps) {
       console.log("🔍 Test avec restaurantId (gerantId):", restaurantId);
 
       // Test direct des données dans la DB
-      const supabase = new (require('@supabase/supabase-js').createClient)(
+      const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
@@ -68,15 +70,15 @@ export function DataDebugger({ user, restaurantId }: DataDebuggerProps) {
       console.log("🔍 Commandes brutes (pour voir les statuts):", rawCommandes);
 
       // Test avec l'API qui fonctionne
-      const apiOrderRepo = new (require('@/data/repositories/ApiOrderRepository').ApiOrderRepository)();
+      const apiOrderRepo = new ApiOrderRepository();
       
       // Utiliser user.id (compte.id) au lieu de restaurantId (user_id)
       const compteId = user?.id.toString() || restaurantId;
       console.log("🔍 Test avec compte.id:", compteId);
       
       // Test des statistiques
-      const stats = await apiOrderRepo.getStats(compteId);
-      console.log("📊 Statistiques:", stats);
+      // const stats = await apiOrderRepo.getStats(compteId);
+      // console.log("📊 Statistiques:", stats);
 
       // Test des commandes
       const orders = await apiOrderRepo.getByRestaurantId(compteId);

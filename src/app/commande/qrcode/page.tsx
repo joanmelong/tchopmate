@@ -25,7 +25,7 @@ export default function QRCodePage() {
       }
 
       const commandes = JSON.parse(commandesJson)
-      const commande = commandes.find((cmd: any) => cmd.id === orderId)
+      const commande = commandes.find((cmd: { id: string }) => cmd.id === orderId)
 
       if (commande) {
         // Construire les données du QR code à partir de la commande
@@ -36,7 +36,7 @@ export default function QRCodePage() {
           clientPhone: commande.clientPhone || 'N/A',
           totalPrice: commande.total || 0,
           date: commande.date || new Date().toISOString(),
-          items: (commande.items || []).map((item: any) => ({
+          items: (commande.items || []).map((item: { name: string; quantity: number; price: number }) => ({
             name: item.name || 'Plat inconnu',
             quantity: item.quantity || 1,
             price: item.price || 0,

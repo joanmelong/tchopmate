@@ -4,8 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { Clock, Users } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+
 import { Label } from "@/components/ui/label"
 
 interface Creneau {
@@ -113,7 +112,7 @@ export function CreneauSelector({ restaurantId, selectedCreneau, onSelect }: Cre
       <Card>
         <CardContent className="text-center py-8">
           <Clock className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-600 font-semibold mb-2">Aucun créneau disponible aujourd'hui</p>
+          <p className="text-gray-600 font-semibold mb-2">Aucun créneau disponible aujourd&apos;hui</p>
           <p className="text-sm text-gray-500">
             Tous les créneaux sont passés ou complets. Revenez demain ou contactez le restaurant.
           </p>
@@ -125,9 +124,9 @@ export function CreneauSelector({ restaurantId, selectedCreneau, onSelect }: Cre
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-base font-semibold">Choisissez votre heure de retrait (Aujourd'hui)</Label>
+        <Label className="text-base font-semibold">Choisissez votre heure de retrait (Aujourd&apos;hui)</Label>
         <p className="text-sm text-gray-500 mt-1">
-          Sélectionnez l'heure à laquelle vous souhaitez retirer votre commande
+          Sélectionnez l&apos;heure à laquelle vous souhaitez retirer votre commande
         </p>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">

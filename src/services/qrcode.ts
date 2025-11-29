@@ -74,7 +74,7 @@ export class QRCodeService {
         date: data.date,
         clientName: data.client,
         clientPhone: data.phone,
-        items: data.items.map((item: any) => ({
+        items: data.items.map((item: { n: string; q: number; p: number }) => ({
           name: item.n,
           quantity: item.q,
           price: item.p

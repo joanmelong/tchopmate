@@ -64,7 +64,7 @@ export default function SuccessPage() {
         {/* Message informatif */}
         <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-8 text-left">
           <p className="text-sm text-blue-900">
-            <strong>Prochaines étapes:</strong> Allez à la page "Mes Commandes" pour voir les détails de votre commande et afficher votre QR code. Présentez ce QR code au restaurant pour valider votre commande.
+            <strong>Prochaines étapes:</strong> Allez à la page &quot;Mes Commandes&quot; pour voir les détails de votre commande et afficher votre QR code. Présentez ce QR code au restaurant pour valider votre commande.
           </p>
         </div>
 

@@ -11,7 +11,7 @@ import { Logo } from "@/components/logo"
 
 export default function NotificationsPage() {
   const router = useRouter()
-  const [notifications, setNotifications] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<Array<{ id: number; titre: string; message: string; created_at: string; lu: boolean }>>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -143,7 +143,7 @@ export default function NotificationsPage() {
             <CardContent className="text-center py-12">
               <Bell className="h-16 w-16 mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune notification</h3>
-              <p className="text-gray-500">Vous n'avez pas encore de notifications</p>
+              <p className="text-gray-500">Vous n&apos;avez pas encore de notifications</p>
             </CardContent>
           </Card>
         ) : (

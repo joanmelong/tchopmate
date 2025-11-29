@@ -17,7 +17,7 @@ export async function POST() {
     console.log("=== Vérification des créneaux dépassés ===");
     
     // Appeler la fonction SQL pour vérifier les créneaux dépassés
-    const { data, error } = await admin.rpc('check_creneaux_depasses');
+    const { error } = await admin.rpc('check_creneaux_depasses');
     
     if (error) {
       console.error("Erreur lors de la vérification des créneaux:", error);

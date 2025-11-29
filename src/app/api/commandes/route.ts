@@ -186,7 +186,26 @@ export async function GET(request: NextRequest) {
     }
 
     // Pour chaque commande, récupérer les items avec toutes les infos plats
-    const results: any[] = [];
+    const results: Array<{
+      id_commande: number;
+      client_id: number;
+      statut: string;
+      montant_total: number;
+      created_at: string;
+      items: Array<{
+        id: number;
+        quantite: number;
+        plat_id: number;
+        plat: {
+          nom: string;
+          prix: number;
+          image_url?: string;
+          description?: string;
+          categorie?: string;
+          temps_preparation?: number;
+        };
+      }>;
+    }> = [];
     for (const c of commandes ?? []) {
       const { data: itemsData, error: itemsErr } = await admin
         .from("commande_plat")

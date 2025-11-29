@@ -135,7 +135,7 @@ export function CreneauSelector({ restaurantId, selectedCreneau, onSelectCreneau
           Choisissez votre créneau de retrait
         </CardTitle>
         <CardDescription>
-          Sélectionnez l'heure à laquelle vous souhaitez récupérer votre commande aujourd'hui
+          Sélectionnez l&apos;heure à laquelle vous souhaitez récupérer votre commande aujourd&apos;hui
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -110,7 +110,7 @@ export async function GET(
 
     // Filtrer et transformer les commandes pour ce restaurant
     const commandesRestaurant = commandes
-      .map((cmd: any) => {
+      .map((cmd: { id_commande: number; client_id: number; statut: string; montant_total: number; created_at: string; creneau_id?: number }) => {
         const cmdPlats = commandePlats?.filter(cp => cp.commande_id === cmd.id_commande) || [];
         
         // Vérifier si au moins un plat appartient au restaurant
@@ -140,7 +140,7 @@ export async function GET(
           prenom: client?.prenom,
         });
         
-        const items = platsRestaurant.map((cp: any) => {
+        const items = platsRestaurant.map((cp: { commande_id: number; plat_id: number; quantite: number }) => {
           const plat = plats?.find(p => p.id === cp.plat_id);
           return {
             name: plat?.nom || "Plat",

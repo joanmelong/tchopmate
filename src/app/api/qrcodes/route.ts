@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Essayer upsert d'abord (si constraint unique existe), sinon fallback sur insert
-    let qrcode: any = null
-    let insertError: any = null
+    let qrcode: { id: number; commande_id: number; qr_code_data: string; created_at: string; updated_at: string } | null = null
+    let insertError: Error | null = null
 
     try {
       const upsertRes = await admin.from("qr_commandes").upsert(payload).select()

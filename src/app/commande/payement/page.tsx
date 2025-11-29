@@ -18,7 +18,7 @@ export default function PaymentConfirmationPage() {
   const router = useRouter()
   const [cart, setCart] = useState<CartItem[]>([])
   const [orderId, setOrderId] = useState<string>("")
-  const [isProcessing, setIsProcessing] = useState(false)
+  // Removed unused isProcessing variable
 
   useEffect(() => {
     const saved = localStorage.getItem("tchopmate-cart")

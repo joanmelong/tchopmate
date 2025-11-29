@@ -4,7 +4,7 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { IOrderRepository, CreateOrderData, OrderFilters } from '@/core/interfaces/IOrderRepository';
-import { Order, OrderStatus } from '@/core/entities/Order';
+import { Order, OrderStatus, OrderItem } from '@/core/entities/Order';
 import { createClient } from '@supabase/supabase-js';
 
 export class SupabaseOrderRepository implements IOrderRepository {
@@ -57,7 +57,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
       }
 
       // Construire les items
-      const items = commandePlats?.map((cp: any) => {
+      const items = commandePlats?.map((cp: { plat_id: number; quantite: number }) => {
         const plat = plats?.find(p => p.id === cp.plat_id);
         return {
           platId: cp.plat_id,
@@ -173,7 +173,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
 
       // Étape 5: Filtrer et transformer les commandes pour ce restaurant
       const commandesRestaurant = commandes
-        .map((cmd: any) => {
+        .map((cmd: { id_commande: number; client_id: number; statut: string; montant_total: number; created_at: string; creneau_id?: number }) => {
           const cmdPlats = commandePlats?.filter(cp => cp.commande_id === cmd.id_commande) || [];
           
           // Vérifier si au moins un plat appartient au restaurant
@@ -186,7 +186,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
             return null;
           }
 
-          const items = platsRestaurant.map((cp: any) => {
+          const items = platsRestaurant.map((cp: { commande_id: number; plat_id: number; quantite: number }) => {
             const plat = plats?.find(p => p.id === cp.plat_id);
             return {
               platId: cp.plat_id,
@@ -339,9 +339,9 @@ export class SupabaseOrderRepository implements IOrderRepository {
     }
   }
 
-  private mapToOrder(data: any): Order {
+  private mapToOrder(data: { id_commande: number; client_id: number; statut: string; montant_total: number; created_at: string; items?: Array<{ platId: number; platNom: string; quantite: number; prixUnitaire: number }> }): Order {
     // Mapper les données de la base vers l'entité Order
-    const items = data.items?.map((item: any) => ({
+    const items = data.items?.map((item: { platId: number; platNom: string; quantite: number; prixUnitaire: number }) => ({
       platId: item.platId || 0,
       platNom: item.platNom || 'Plat inconnu',
       quantite: item.quantite || 1,
@@ -352,7 +352,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
       id: data.id_commande,
       studentId: data.client_id || 0,
       restaurantId: data.restaurant_id || '',
-      items: items.map((item: any) => new (require('@/core/entities/Order').OrderItem)(item)),
+      items: items.map((item: { platId: number; platNom: string; quantite: number; prixUnitaire: number }) => new OrderItem(item)),
       status: this.mapStatus(data.statut),
       totalPrice: data.montant_total || 0,
       qrCode: data.qr_code,

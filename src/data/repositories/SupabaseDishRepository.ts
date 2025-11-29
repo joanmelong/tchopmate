@@ -204,7 +204,7 @@ export class SupabaseDishRepository implements IDishRepository, IAnalyticsReposi
     }
   }
 
-  private mapToDishDTO(data: any): DishDTO {
+  private mapToDishDTO(data: { id: number; nom: string; description?: string; prix: number; image_url?: string; disponible: boolean; restaurant_id: string; categorie?: string; temps_preparation?: number }): DishDTO {
     return {
       id: data.id,
       restaurant_id: data.restaurant_id.toString(),

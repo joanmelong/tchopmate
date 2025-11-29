@@ -10,7 +10,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
  * Attention: Cette fonction ne valide PAS le JWT, elle extrait seulement les données
  * La signature du JWT doit avoir été validée avant d'utiliser cette fonction
  */
-function decodeJWT(token: string): any {
+function decodeJWT(token: string): { sub?: string; email?: string; user_metadata?: any } | null {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) {
@@ -146,7 +146,7 @@ export async function getClientFromRequest(
     });
 
     // Récupérer le compte depuis la table compte avec l'ID utilisateur
-    let { data: compte, error: compteError } = await admin
+    const { data: compte, error: compteError } = await admin
       .from("compte")
       .select("id, nom, prenom, email, numero_tel")
       .eq("user_id", userId)

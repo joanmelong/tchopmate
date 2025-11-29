@@ -17,7 +17,7 @@ export async function POST() {
     console.log("=== Duplication des créneaux quotidiens ===");
     
     // Appeler la fonction SQL pour dupliquer les créneaux si nécessaire
-    const { data, error } = await admin.rpc('duplicate_creneaux_if_needed');
+    const { error } = await admin.rpc('duplicate_creneaux_if_needed');
     
     if (error) {
       console.error("Erreur lors de la duplication des créneaux:", error);
