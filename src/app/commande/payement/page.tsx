@@ -18,7 +18,8 @@ export default function PaymentConfirmationPage() {
   const router = useRouter()
   const [cart, setCart] = useState<CartItem[]>([])
   const [orderId, setOrderId] = useState<string>("")
-  // Removed unused isProcessing variable
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem("tchopmate-cart")
@@ -60,7 +61,8 @@ export default function PaymentConfirmationPage() {
     }
   }
 
-  const handleMobileMoney = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleMobileMoney = () => {
     if (cart.length === 0) return
     setIsProcessing(true)
     saveOrderAndClearCart('mobile_money')
@@ -72,7 +74,8 @@ export default function PaymentConfirmationPage() {
     }, 700)
   }
 
-  const handlePayAtRestaurant = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handlePayAtRestaurant = () => {
     if (cart.length === 0) return
     setIsProcessing(true)
     saveOrderAndClearCart('au_restaurant')
@@ -83,7 +86,8 @@ export default function PaymentConfirmationPage() {
     }, 400)
   }
 
-  const handleCancelOrder = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleCancelOrder = () => {
     const ok = confirm('Voulez-vous annuler la commande ?')
     if (!ok) return
     try {

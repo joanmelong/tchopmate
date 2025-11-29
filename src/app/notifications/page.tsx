@@ -16,6 +16,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     loadNotifications()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadNotifications = async () => {
@@ -44,12 +45,12 @@ export default function NotificationsPage() {
   const markAsRead = async (notificationId: string) => {
     const { error } = await supabase
       .from('notifications')
-      .update({ lue: true })
+      .update({ lu: true })
       .eq('id', notificationId)
 
     if (!error) {
       setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, lue: true } : n)
+        prev.map(n => n.id === Number(notificationId) ? { ...n, lu: true } : n)
       )
     }
   }
@@ -60,12 +61,12 @@ export default function NotificationsPage() {
 
     const { error } = await supabase
       .from('notifications')
-      .update({ lue: true })
+      .update({ lu: true })
       .eq('user_id', user.id)
-      .eq('lue', false)
+      .eq('lu', false)
 
     if (!error) {
-      setNotifications(prev => prev.map(n => ({ ...n, lue: true })))
+      setNotifications(prev => prev.map(n => ({ ...n, lu: true })))
     }
   }
 
@@ -81,6 +82,8 @@ export default function NotificationsPage() {
         return <Clock className="h-5 w-5 text-orange-500" />
       case 'commande_en_preparation':
         return <Clock className="h-5 w-5 text-blue-500" />
+      case 'info':
+        return <Bell className="h-5 w-5 text-blue-500" />
       default:
         return <Bell className="h-5 w-5 text-gray-500" />
     }
@@ -98,12 +101,14 @@ export default function NotificationsPage() {
         return 'bg-orange-100 text-orange-700'
       case 'commande_en_preparation':
         return 'bg-blue-100 text-blue-700'
+      case 'info':
+        return 'bg-blue-100 text-blue-700'
       default:
         return 'bg-gray-100 text-gray-700'
     }
   }
 
-  const unreadCount = notifications.filter(n => !n.lue).length
+  const unreadCount = notifications.filter(n => !n.lu).length
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-background">
@@ -151,16 +156,16 @@ export default function NotificationsPage() {
             {notifications.map((notif) => (
               <Card 
                 key={notif.id} 
-                className={`transition-all ${notif.lue ? 'opacity-60' : 'border-l-4 border-l-orange-500'}`}
+                className={`transition-all ${notif.lu ? 'opacity-60' : 'border-l-4 border-l-orange-500'}`}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    <div className="mt-1">{getIcon(notif.type)}</div>
+                     <div className="mt-1">{getIcon('info')}</div>
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="font-semibold text-gray-900">{notif.titre}</h3>
-                        <Badge className={getTypeColor(notif.type)}>
-                          {notif.type.replace('_', ' ')}
+                        <Badge className={getTypeColor('info')}>
+                          Info
                         </Badge>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
@@ -173,11 +178,11 @@ export default function NotificationsPage() {
                         })}
                       </p>
                     </div>
-                    {!notif.lue && (
+                    {!notif.lu && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => markAsRead(notif.id)}
+                         onClick={() => markAsRead(String(notif.id))}
                         className="text-orange-600 hover:text-orange-700"
                       >
                         <Check className="h-4 w-4" />

@@ -24,7 +24,8 @@ export function QRCodeView({
   qrCode,
   isLoading,
   error,
-  orderId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  orderId: _orderId,
   onBack,
 }: QRCodeViewProps) {
   if (isLoading) {
@@ -128,6 +129,7 @@ export function QRCodeView({
 
           {/* Box du QR Code */}
           <div className="relative z-10 bg-white rounded-[15px] p-6 shadow-[0_5px_15px_rgba(0,0,0,0.1)] max-w-[300px] mx-auto">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={qrCode.qrCodeDataUrl}
               alt={`QR Code pour ${qrCode.orderId}`}

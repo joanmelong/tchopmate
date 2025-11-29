@@ -26,6 +26,7 @@ export function CreneauSelector({ restaurantId, selectedCreneau, onSelectCreneau
 
   useEffect(() => {
     loadCreneaux()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId])
 
   const loadCreneaux = async () => {

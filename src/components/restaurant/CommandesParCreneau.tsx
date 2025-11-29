@@ -15,9 +15,9 @@ interface Commande {
   montant_total: number
   creneau_retrait: string
   created_at: string
-  client: {
-    nom: string
-    prenom: string
+  client?: {
+    nom?: string
+    prenom?: string
   }
 }
 
@@ -43,6 +43,7 @@ export function CommandesParCreneau({ restaurantId, date }: CommandesParCreneauP
 
   useEffect(() => {
     loadCommandes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId, selectedDate])
 
   const loadCommandes = async () => {
@@ -80,12 +81,13 @@ export function CommandesParCreneau({ restaurantId, date }: CommandesParCreneauP
     }
   }
 
-  const groupByCreneaux = (commandes: any[]): CreneauGroup[] => {
+  const groupByCreneaux = (commandes: Array<{ creneau_retrait: string; id_commande: number; numero_commande?: string; statut: string; montant_total: number; created_at?: string; client?: { nom?: string; prenom?: string } | Array<{ nom?: string; prenom?: string }>; items?: Array<{ name: string; qty: number; price: number }> }>): CreneauGroup[] => {
     const map = new Map<string, Commande[]>()
 
     commandes.forEach((cmd) => {
       const date = new Date(cmd.creneau_retrait)
-      const heureDebut = date.toTimeString().substring(0, 5)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _heureDebut = date.toTimeString().substring(0, 5)
       
       // Arrondir à la demi-heure pour grouper
       const minutes = date.getMinutes()
@@ -95,7 +97,12 @@ export function CommandesParCreneau({ restaurantId, date }: CommandesParCreneauP
         map.set(heureRounded, [])
       }
       map.get(heureRounded)!.push({
-        ...cmd,
+        id_commande: String(cmd.id_commande),
+        numero_commande: cmd.numero_commande || '',
+        statut: cmd.statut,
+        montant_total: cmd.montant_total,
+        creneau_retrait: cmd.creneau_retrait,
+        created_at: cmd.created_at || '',
         client: Array.isArray(cmd.client) ? cmd.client[0] : cmd.client
       })
     })

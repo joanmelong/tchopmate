@@ -5,7 +5,6 @@
 import { IOrderRepository } from '../../interfaces/IOrderRepository';
 import { IAnalyticsRepository } from '../../interfaces/IAnalyticsRepository';
 import { User } from '../../entities/User';
-import { OrderStatus } from '../../entities/Order';
 
 export interface DailySalesData {
   day: string;
@@ -135,19 +134,20 @@ export class GetAnalyticsDataUseCase {
   }
 
   private async getPopularDishes(restaurantId: string, orders: Array<{ items: Array<{ platNom: string; quantite: number; prixUnitaire: number }> }>): Promise<PopularDish[]> {
-    // Compter les plats par ID
-    const dishCounts = new Map<number, { count: number; revenue: number; name: string }>();
+    // Compter les plats par nom
+    const dishCounts = new Map<string, { count: number; revenue: number; name: string }>();
     
     orders.forEach(order => {
       order.items.forEach((item: { platNom: string; quantite: number; prixUnitaire: number }) => {
-        const existing = dishCounts.get(item.platId);
+        const existing = dishCounts.get(item.platNom);
+        const subtotal = item.quantite * item.prixUnitaire;
         if (existing) {
           existing.count += item.quantite;
-          existing.revenue += item.calculateSubtotal();
+          existing.revenue += subtotal;
         } else {
-          dishCounts.set(item.platId, {
+          dishCounts.set(item.platNom, {
             count: item.quantite,
-            revenue: item.calculateSubtotal(),
+            revenue: subtotal,
             name: item.platNom,
           });
         }
@@ -172,7 +172,8 @@ export class GetAnalyticsDataUseCase {
 
     // Convertir en tableau et trier par popularité
     return Array.from(dishCounts.entries())
-      .map(([platId, data]) => ({
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .map(([_platId, data]) => ({
         name: data.name,
         orders: data.count,
         revenue: data.revenue,

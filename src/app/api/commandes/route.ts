@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
     // Récupérer uniquement les commandes EN_ATTENTE du client authentifié
     const { data: commandes, error } = await admin
       .from("commande")
-      .select("id_commande, date_commande, statut, montant_total, commentaire, livraison, created_at, creneau_retrait")
+      .select("id_commande, client_id, date_commande, statut, montant_total, commentaire, livraison, created_at, creneau_retrait")
       .eq("client_id", client.id)
       .eq("statut", "EN_ATTENTE") // Filtrer uniquement les commandes en attente
       .order("created_at", { ascending: false })
@@ -205,6 +205,13 @@ export async function GET(request: NextRequest) {
           temps_preparation?: number;
         };
       }>;
+      client: {
+        id: number;
+        nom: string;
+        prenom: string;
+        email: string;
+        numero_tel?: string;
+      };
     }> = [];
     for (const c of commandes ?? []) {
       const { data: itemsData, error: itemsErr } = await admin
@@ -217,8 +224,15 @@ export async function GET(request: NextRequest) {
       }
 
       results.push({
-        ...c,
-        items: itemsData ?? [],
+        id_commande: c.id_commande,
+        client_id: c.client_id,
+        statut: c.statut,
+        montant_total: c.montant_total,
+        created_at: c.created_at,
+        items: (itemsData ?? []).map(item => ({
+          ...item,
+          plat: Array.isArray(item.plat) ? item.plat[0] : item.plat
+        })),
         // Ajouter les informations du client
         client: {
           id: client.id,

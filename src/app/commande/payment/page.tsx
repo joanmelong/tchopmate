@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { ShoppingCart, CreditCard, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
-import type { User as SupabaseUser } from "@supabase/supabase-js"
+import type { User as SupabaseUser, Session } from "@supabase/supabase-js"
 import { CreneauSelector } from "@/components/order/CreneauSelector"
 
 type CartItem = {
@@ -35,9 +35,9 @@ export default function PaymentPage() {
 useEffect(() => {
   let isMounted = true
 
-  const handleSession = (session: { user?: any; access_token?: string } | null) => {
+  const handleSession = (session: Session | null) => {
     if (isMounted) {
-      if (session?.user && session.access_token) {
+      if (session?.user && session.user.email && session.access_token) {
         // L'utilisateur est connecté. On stocke le token et on arrête le chargement.
         setUser(session.user)
         setSessionToken(session.access_token)
@@ -316,7 +316,7 @@ useEffect(() => {
       <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Vérification de l'authentification...</p>
+          <p className="text-gray-600">Vérification de l&apos;authentification...</p>
         </div>
       </div>
     )

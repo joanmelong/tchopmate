@@ -30,7 +30,20 @@ import type { User } from "@supabase/supabase-js"
 export default function FavorisPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
-  const [favoriteDishes, setFavoriteDishes] = useState<Array<{ id: number; nom: string; prix: number; image_url?: string; description?: string; restaurant_id: string }>>([])
+  const [favoriteDishes, setFavoriteDishes] = useState<Array<{ 
+    id: number; 
+    nom: string; 
+    name: string;
+    prix: number; 
+    price: number;
+    image_url?: string; 
+    image: string;
+    description?: string; 
+    restaurant_id: string;
+    rating: number;
+    available: boolean;
+    preparationTime: string;
+  }>>([])
   const [loading, setLoading] = useState(true)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -88,18 +101,21 @@ export default function FavorisPage() {
         }
         
         // Transformer les données pour l'affichage
-        const dishes = data?.map((f: { plat: any }) => {
+        const dishes = data?.map((f: { plat_id: string; plat: Record<string, unknown>[] | Record<string, unknown> }) => {
           const plat = Array.isArray(f.plat) ? f.plat[0] : f.plat
           return {
-            id: plat.id,
-            name: plat.nom,
-            description: plat.description || '',
-            price: plat.prix,
+            id: Number(plat.id),
+            nom: String(plat.nom),
+            name: String(plat.nom),
+            description: String(plat.description || ''),
+            prix: Number(plat.prix),
+            price: Number(plat.prix),
+            image_url: String(plat.image_url || '/placeholder.svg'),
+            image: String(plat.image_url || '/placeholder.svg'),
+            restaurant_id: String(plat.restaurant_id || ''),
             rating: 4.5,
-            image: plat.image_url || '/placeholder.svg',
-            category: plat.categorie || 'plats',
-            available: plat.disponible,
-            preparationTime: plat.temps_preparation ? `${plat.temps_preparation} min` : '20 min',
+            available: Boolean(plat.disponible !== false),
+            preparationTime: plat.temps_preparation ? `${plat.temps_preparation} min` : '15 min'
           }
         }) || []
         
@@ -128,7 +144,7 @@ export default function FavorisPage() {
       return
     }
     
-    setFavoriteDishes(prev => prev.filter(dish => dish.id !== itemId))
+    setFavoriteDishes(prev => prev.filter(dish => dish.id !== Number(itemId)))
   }
 
   const addToCart = (item: { id: number; name: string; price: number; image?: string }) => {
@@ -280,6 +296,7 @@ export default function FavorisPage() {
               <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
                 <div className="relative h-48 bg-gray-100">
                   {item.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img 
                       src={item.image} 
                       alt={item.name} 
@@ -307,7 +324,7 @@ export default function FavorisPage() {
                     variant="ghost"
                     size="sm"
                     className="absolute bottom-2 right-2 bg-white/80 hover:bg-white"
-                    onClick={() => toggleFavorite(item.id)}
+                    onClick={() => toggleFavorite(String(item.id))}
                   >
                     <Heart className="h-4 w-4 fill-orange-500 text-orange-500" />
                   </Button>

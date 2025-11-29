@@ -2,17 +2,19 @@
  * Repository des commandes utilisant l'API existante (contourne RLS)
  */
 
-import { IOrderRepository, OrderFilters } from '@/core/interfaces/IOrderRepository';
+import { IOrderRepository, OrderFilters, CreateOrderData } from '@/core/interfaces/IOrderRepository';
 import { Order, OrderStatus, OrderItem } from '@/core/entities/Order';
 
 export class ApiOrderRepository implements IOrderRepository {
   
-  async getById(id: number): Promise<Order | null> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getById(_id: number): Promise<Order | null> {
     // TODO: Implémenter si nécessaire
     throw new Error('Méthode getById non implémentée pour ApiOrderRepository');
   }
 
-  async getByStudentId(studentId: number): Promise<Order[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getByStudentId(_studentId: number): Promise<Order[]> {
     // TODO: Implémenter si nécessaire
     throw new Error('Méthode getByStudentId non implémentée pour ApiOrderRepository');
   }
@@ -34,7 +36,7 @@ export class ApiOrderRepository implements IOrderRepository {
       const commandes = data.commandes || [];
       
       // Convertir les données de l'API vers nos entités Order
-      const orders = commandes.map((cmd: { id_commande: number; statut: string; created_at: string; montant_total: number; items?: Array<{ plat_id?: number; name?: string; qty?: number; price?: number }> }) => {
+      const orders = commandes.map((cmd: { id_commande: number; statut: string; created_at: string; montant_total: number; client?: { id?: number }; items?: Array<{ plat_id?: number; name?: string; qty?: number; price?: number }> }) => {
         const items = cmd.items?.map((item: { plat_id?: number; name?: string; qty?: number; price?: number }) => new OrderItem({
           platId: item.plat_id || 0,
           platNom: item.name || 'Plat inconnu',
@@ -56,20 +58,20 @@ export class ApiOrderRepository implements IOrderRepository {
       });
 
       // Appliquer les filtres si nécessaire
-      let filteredOrders = orders;
+      let filteredOrders: Order[] = orders;
 
       if (filters?.status) {
-        filteredOrders = filteredOrders.filter(order => order.status === filters.status);
+        filteredOrders = filteredOrders.filter((order: Order) => order.status === filters.status);
       }
 
       if (filters?.dateFrom) {
-        filteredOrders = filteredOrders.filter(order => 
+        filteredOrders = filteredOrders.filter((order: Order) => 
           order.createdAt >= filters.dateFrom!
         );
       }
 
       if (filters?.dateTo) {
-        filteredOrders = filteredOrders.filter(order => 
+        filteredOrders = filteredOrders.filter((order: Order) => 
           order.createdAt <= filters.dateTo!
         );
       }
@@ -90,15 +92,18 @@ export class ApiOrderRepository implements IOrderRepository {
     return [];
   }
 
-  async create(data: { studentId: string; items: Array<{ platId: number; quantity: number }> }): Promise<Order> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async create(_data: CreateOrderData): Promise<Order> {
     throw new Error('Méthode create non implémentée pour ApiOrderRepository');
   }
 
-  async updateStatus(id: number, status: OrderStatus): Promise<Order> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async updateStatus(_id: number, _status: OrderStatus): Promise<Order> {
     throw new Error('Méthode updateStatus non implémentée pour ApiOrderRepository');
   }
 
-  async cancel(id: number): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async cancel(_id: number): Promise<void> {
     throw new Error('Méthode cancel non implémentée pour ApiOrderRepository');
   }
 

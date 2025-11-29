@@ -2,7 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 /**
@@ -10,7 +11,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
  * Attention: Cette fonction ne valide PAS le JWT, elle extrait seulement les données
  * La signature du JWT doit avoir été validée avant d'utiliser cette fonction
  */
-function decodeJWT(token: string): { sub?: string; email?: string; user_metadata?: any } | null {
+function decodeJWT(token: string): { sub?: string; email?: string; user_metadata?: Record<string, unknown> } | null {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) {

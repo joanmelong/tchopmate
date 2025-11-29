@@ -15,10 +15,11 @@ const admin = createClient(url, serviceKey, {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const gerantId = params.id; // C'est l'ID du gérant (compte.id)
+    const resolvedParams = await params;
+    const gerantId = resolvedParams.id; // C'est l'ID du gérant (compte.id)
     console.log("=== API /resto/[id]/orders ===");
     console.log("Gérant ID (compte.id):", gerantId);
 
@@ -151,7 +152,6 @@ export async function GET(
 
         return {
           id_commande: cmd.id_commande,
-          date_commande: cmd.date_commande,
           statut: cmd.statut,
           montant_total: cmd.montant_total,
           created_at: cmd.created_at,

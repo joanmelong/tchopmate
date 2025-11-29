@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 export default function QRCodePage() {
   const { id } = useParams(); // UUID venant de Supabase
@@ -152,7 +153,7 @@ export default function QRCodePage() {
 
         <div className="card">
           <div className="back-link">
-            <a href="/">&larr; Accueil</a>
+            <Link href="/">&larr; Accueil</Link>
           </div>
 
           <h1>Mon QR Code</h1>
@@ -164,6 +165,7 @@ export default function QRCodePage() {
               {!order ? (
                 <p>Chargement...</p>
               ) : (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={qrURL} alt="QR Code" />
               )}
             </div>

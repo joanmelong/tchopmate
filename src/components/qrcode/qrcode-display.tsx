@@ -23,7 +23,8 @@ interface QRCodeDisplayProps {
  *   )}
  * </QRCodeDisplay>
  */
-export function QRCodeDisplay({ orderId, qrData, onBack, children }: QRCodeDisplayProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function QRCodeDisplay({ orderId, qrData, onBack: _onBack, children }: QRCodeDisplayProps) {
   const qrCodeState = useQRCode(orderId, qrData)
 
   return (

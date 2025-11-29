@@ -652,6 +652,7 @@ export default function MenuPage() {
             <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
               <div className="relative h-48 bg-gray-100">
                 {item.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img 
                     src={item.image} 
                     alt={item.name} 
@@ -772,6 +773,7 @@ export default function MenuPage() {
                   <div key={item.id} className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
                     <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
                       {item.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={item.image}
                           alt={item.name}

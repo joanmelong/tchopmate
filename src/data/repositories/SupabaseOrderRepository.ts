@@ -201,7 +201,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
             items: items,
           };
         })
-        .filter(Boolean);
+        .filter((item): item is NonNullable<typeof item> => item !== null);
 
       return commandesRestaurant.map(item => this.mapToOrder(item));
     } catch (error) {
@@ -257,7 +257,8 @@ export class SupabaseOrderRepository implements IOrderRepository {
     return data.map(item => this.mapToOrder(item));
   }
 
-  async create(createData: CreateOrderData): Promise<Order> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async create(_createData: CreateOrderData): Promise<Order> {
     // TODO: Implémenter la création de commande
     throw new Error('Méthode create non implémentée');
   }
@@ -339,7 +340,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
     }
   }
 
-  private mapToOrder(data: { id_commande: number; client_id: number; statut: string; montant_total: number; created_at: string; items?: Array<{ platId: number; platNom: string; quantite: number; prixUnitaire: number }> }): Order {
+  private mapToOrder(data: { id_commande: number; client_id: number; restaurant_id?: string; statut: string; montant_total: number; created_at: string; qr_code?: string; updated_at?: string; items?: Array<{ platId: number; platNom: string; quantite: number; prixUnitaire: number }> }): Order {
     // Mapper les données de la base vers l'entité Order
     const items = data.items?.map((item: { platId: number; platNom: string; quantite: number; prixUnitaire: number }) => ({
       platId: item.platId || 0,

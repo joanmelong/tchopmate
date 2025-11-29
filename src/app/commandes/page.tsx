@@ -32,7 +32,6 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { QRCodeButton } from "@/components/ui/qr-code-button"
 import { QRCodeModal } from "@/components/ui/qr-code-modal"
 import { useOrderQRCode } from "@/hooks/use-order-qrcode"
-import { Order as OrderEntity, OrderItem as OrderItemEntity, OrderStatus } from "@/core/entities/Order"
 
 type OrderItem = {
   id: number | string
@@ -169,7 +168,8 @@ export default function CommandesPage() {
 
   const [isQRModalOpen, setIsQRModalOpen] = useState(false)
   const [currentOrderForQR, setCurrentOrderForQR] = useState<Order | null>(null)
-  const { qrCode, isGenerating, generateQRCode, resetQRCode } = useOrderQRCode()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { qrCode, isGenerating, generateQRCode: _generateQRCode, resetQRCode } = useOrderQRCode()
 
 
   useEffect(() => {

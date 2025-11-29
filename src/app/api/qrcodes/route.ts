@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       qrcode = upsertRes.data?.[0] ?? null
       insertError = upsertRes.error
     } catch (e) {
-      insertError = e
+      insertError = e instanceof Error ? e : new Error(String(e))
     }
 
     if (insertError) {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         qrcode = insertRes.data?.[0] ?? null
         insertError = insertRes.error
       } catch (e) {
-        insertError = e
+        insertError = e instanceof Error ? e : new Error(String(e))
       }
     }
 

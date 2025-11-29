@@ -25,7 +25,8 @@ import { UserRole } from "@/core/entities/User"
 const COLORS = ["#f97316", "#fbbf24", "#60a5fa"]
 
 export default function AnalyticsPage() {
-  const params = useParams();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _params = useParams();
   // const gerantId = params.id as string; // Removed unused variable
 
   // Hook de protection de route avec vérification du rôle

@@ -16,7 +16,8 @@ interface ImageUploadFieldProps {
   onPreviewChange?: (preview: string) => void
 }
 
-export function ImageUploadField({ label, value, onChange, preview, onPreviewChange }: ImageUploadFieldProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function ImageUploadField({ label, value: _value, onChange, preview, onPreviewChange }: ImageUploadFieldProps) {
   const [isDragging, setIsDragging] = useState(false)
 
   const handleFileSelect = (file: File) => {

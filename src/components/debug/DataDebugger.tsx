@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { SupabaseOrderRepository } from '@/data/repositories/SupabaseOrderRepository';
 import { SupabaseDishRepository } from '@/data/repositories/SupabaseDishRepository';
 import { User } from '@/core/entities/User';
 import { createClient } from '@supabase/supabase-js';
@@ -15,7 +14,7 @@ interface DataDebuggerProps {
 }
 
 export function DataDebugger({ user, restaurantId }: DataDebuggerProps) {
-  const [debugData, setDebugData] = useState<Record<string, any> | null>(null);
+  const [debugData, setDebugData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
 
   const testData = async () => {
@@ -23,7 +22,6 @@ export function DataDebugger({ user, restaurantId }: DataDebuggerProps) {
 
     setLoading(true);
     try {
-      const orderRepo = new SupabaseOrderRepository();
       const dishRepo = new SupabaseDishRepository();
 
       console.log("🔍 Test avec restaurantId (gerantId):", restaurantId);
@@ -100,7 +98,7 @@ export function DataDebugger({ user, restaurantId }: DataDebuggerProps) {
         compteData,
         compteError: compteError?.message,
         rawCommandes,
-        stats,
+        stats: null, // Stats functionality disabled
         ordersCount: orders.length,
         orders: orders.slice(0, 3), // Premiers 3 pour l'affichage
         dishesCount: dishes.length,
@@ -109,7 +107,7 @@ export function DataDebugger({ user, restaurantId }: DataDebuggerProps) {
       });
     } catch (error) {
       console.error("❌ Erreur test:", error);
-      setDebugData({ error: error.message });
+      setDebugData({ error: error instanceof Error ? error.message : String(error) });
     } finally {
       setLoading(false);
     }
@@ -128,12 +126,12 @@ export function DataDebugger({ user, restaurantId }: DataDebuggerProps) {
           <div className="space-y-4">
             {debugData.error ? (
               <div className="text-red-600">
-                <strong>Erreur:</strong> {debugData.error}
+                <strong>Erreur:</strong> {String(debugData.error)}
               </div>
             ) : (
               <>
                 <div>
-                  <strong>👤 Gérant ID:</strong> {debugData.gerantId}
+                  <strong>👤 Gérant ID:</strong> {String(debugData.gerantId)}
                 </div>
                 
                 <div>
@@ -141,8 +139,8 @@ export function DataDebugger({ user, restaurantId }: DataDebuggerProps) {
                   <pre className="text-xs bg-white p-2 rounded mt-1">
                     {JSON.stringify(debugData.restaurantData, null, 2)}
                   </pre>
-                  {debugData.restaurantError && (
-                    <p className="text-red-600 text-xs mt-1">Erreur: {debugData.restaurantError}</p>
+                  {Boolean(debugData.restaurantError) && (
+                    <p className="text-red-600 text-xs mt-1">Erreur: {String(debugData.restaurantError)}</p>
                   )}
                 </div>
                 
@@ -158,8 +156,8 @@ export function DataDebugger({ user, restaurantId }: DataDebuggerProps) {
                   <pre className="text-xs bg-white p-2 rounded mt-1">
                     {JSON.stringify(debugData.compteData, null, 2)}
                   </pre>
-                  {debugData.compteError && (
-                    <p className="text-red-600 text-xs mt-1">Erreur: {debugData.compteError}</p>
+                  {Boolean(debugData.compteError) && (
+                    <p className="text-red-600 text-xs mt-1">Erreur: {String(debugData.compteError)}</p>
                   )}
                 </div>
                 
@@ -178,14 +176,14 @@ export function DataDebugger({ user, restaurantId }: DataDebuggerProps) {
                 </div>
                 
                 <div>
-                  <strong>📦 Commandes ({debugData.ordersCount} total):</strong>
+                  <strong>📦 Commandes ({String(debugData.ordersCount)} total):</strong>
                   <pre className="text-xs bg-white p-2 rounded mt-1">
                     {JSON.stringify(debugData.orders, null, 2)}
                   </pre>
                 </div>
                 
                 <div>
-                  <strong>🍽️ Plats ({debugData.dishesCount} total):</strong>
+                  <strong>🍽️ Plats ({String(debugData.dishesCount)} total):</strong>
                   <pre className="text-xs bg-white p-2 rounded mt-1">
                     {JSON.stringify(debugData.dishes, null, 2)}
                   </pre>

@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   Calendar,
   Clock,
+  BarChart3,
 } from "lucide-react"
 import { AdminSidebar } from "@/components/ui/admin-sidebar"
 import {

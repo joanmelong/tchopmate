@@ -8,7 +8,7 @@ import { useNotifications } from '@/hooks/use-notifications';
 
 export default function TestNotificationPage() {
   const router = useRouter();
-  const { addNotification, unreadCount } = useNotifications();
+  const { unreadCount } = useNotifications();
   const [isLoading, setIsLoading] = useState(false);
   const [emailStatus, setEmailStatus] = useState<{ success: boolean; message: string } | null>(null);
   
@@ -60,12 +60,7 @@ export default function TestNotificationPage() {
       const data = await response.json();
 
       if (data.success) {
-        addNotification({
-          titre: `Commande #${testData.numeroCommande} prête bientôt`,
-          message: `Votre commande sera prête à ${testData.creneauHeure}. Venez la récupérer !`,
-          type: 'rappel_creneau'
-        });
-
+        // Notification would be added via the API
         // Optionnel : tu peux fetch cette page pour updater le statut
         setEmailStatus({ success: true, message: "Email envoyé à l'heure exacte !" });
       }

@@ -38,6 +38,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     loadOrders()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId])
 
   const loadOrders = async () => {
@@ -68,13 +69,11 @@ export default function OrdersPage() {
           customerName = cmd.client.prenom
         } else if (cmd.client?.nom) {
           customerName = cmd.client.nom
-        } else if (cmd.client?.id) {
-          customerName = `Client #${cmd.client.id}`
         }
         
         console.log("Client pour commande:", cmd.id_commande, customerName, cmd.client)
         
-        const items: OrderItem[] = cmd.items?.length > 0 
+        const items: OrderItem[] = cmd.items && cmd.items.length > 0 
           ? cmd.items.map((item: { name: string; qty: number; price: number }) => ({
               name: item.name,
               qty: item.qty,
@@ -86,10 +85,8 @@ export default function OrdersPage() {
               price: "0 FCFA"
             }]
 
-        const time = cmd.date_commande 
-          ? new Date(cmd.date_commande).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-          : new Date(cmd.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-
+        const time = new Date(cmd.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        
         return {
           id: cmd.id_commande,
           customer: customerName,
@@ -97,7 +94,7 @@ export default function OrdersPage() {
           total: `${cmd.montant_total || 0} FCFA`,
           status: cmd.statut?.toLowerCase() || "en_attente",
           time,
-          address: cmd.client?.numero_tel || "",
+          address: "",
         }
       })
 

@@ -55,6 +55,7 @@ export default function CreneauxManagementPage() {
     if (restaurantId) {
       loadCreneaux()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId])
 
   const loadCreneaux = async () => {

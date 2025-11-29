@@ -13,6 +13,8 @@ import {
   Mail,
   ShoppingBag,
   Calendar,
+  Users,
+  BarChart3,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AdminSidebar } from "@/components/ui/admin-sidebar"

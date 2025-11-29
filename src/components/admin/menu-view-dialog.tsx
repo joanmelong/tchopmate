@@ -11,6 +11,7 @@ interface MenuViewDialogProps {
   menu: { id: string; nom: string; description?: string; prix: number; image_url?: string; disponible: boolean }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const AVAILABLE_DISHES = [
   {
     id: 1,
