@@ -3,7 +3,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, UtensilsCrossed, BookOpen, ShoppingCart, BarChart3, ChevronLeft, LogOut } from "lucide-react"
+import { LayoutDashboard, UtensilsCrossed, BookOpen, ShoppingCart, BarChart3, Clock, ChevronLeft, LogOut } from "lucide-react"
 import { useSession } from "@/hooks/use-session"
 
 interface SidebarProps {
@@ -23,6 +23,7 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
     { href: `/resto/${gerantId}/dishes`, label: "Gestion des plats", icon: UtensilsCrossed },
     { href: `/resto/${gerantId}/menus`, label: "Gestion des menus", icon: BookOpen },
     { href: `/resto/${gerantId}/orders`, label: "Commandes", icon: ShoppingCart },
+    { href: `/resto/${gerantId}/creneaux`, label: "Créneaux horaires", icon: Clock },
     { href: `/resto/${gerantId}/analytics`, label: "Statistiques", icon: BarChart3 },
   ]
 

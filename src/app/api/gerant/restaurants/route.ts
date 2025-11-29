@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/gerant/restaurants
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // TODO: Implement restaurant fetching logic for gerant
     return NextResponse.json({ restaurants: [] }, { status: 200 });

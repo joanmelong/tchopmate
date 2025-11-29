@@ -26,10 +26,6 @@ import {
   Edit,
   Trash2,
   Search,
-  LayoutDashboard,
-  ShoppingBag,
-  Users,
-  BarChart3,
 } from "lucide-react"
 
 interface Dish {

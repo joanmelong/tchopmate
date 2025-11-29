@@ -7,9 +7,9 @@ import { UserRole } from "@/core/entities/User";
 import { DashboardStats } from "@/components/admin/dashboard-stats";
 import { DailySalesChart } from "@/components/admin/daily-sales-chart";
 import { PopularDishes } from "@/components/admin/popular-dishes";
+import { DataDebugger } from "@/components/debug/DataDebugger";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { error } from "console";
 import router from "next/router";
 
 /**
@@ -29,7 +29,7 @@ export default function AdminDashboard() {
   const gerantId = params.id as string;
 
   // Hook de protection de route avec vérification du rôle
-  const { user, isLoading: authLoading, isAuthorized } = useProtectedRoute({
+  const { user, isLoading: authLoading } = useProtectedRoute({
     requiredRole: UserRole.STAFF,
     redirectTo: "/resto/login",
   });
@@ -109,14 +109,16 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      <DashboardStats />
+      <DataDebugger user={user} restaurantId={gerantId} />
+
+      <DashboardStats user={user} restaurantId={gerantId} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <DailySalesChart />
+          <DailySalesChart user={user} restaurantId={gerantId} />
         </div>
         <div>
-          <PopularDishes />
+          <PopularDishes user={user} restaurantId={gerantId} />
         </div>
       </div>
     </div>

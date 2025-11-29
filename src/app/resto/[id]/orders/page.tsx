@@ -1,62 +1,159 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, CheckCircle, Clock, AlertCircle } from "lucide-react"
+import { Eye, CheckCircle, AlertCircle, Loader2, RefreshCw } from "lucide-react"
 import { OrderDetailDialog } from "@/components/admin/order-detail-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { supabase } from "@/lib/supabaseClient"
+import { useParams } from "next/navigation"
+
+type OrderItem = {
+  name: string
+  qty: number
+  price: string
+}
+
+type Order = {
+  id: string
+  customer: string
+  items: OrderItem[]
+  total: string
+  status: string
+  time: string
+  address?: string
+}
 
 export default function OrdersPage() {
+  const params = useParams()
+  const restaurantId = params.id as string
+  
   const [showDetail, setShowDetail] = useState(false)
-  const [selectedOrder, setSelectedOrder] = useState<{ id: string; customer: string; items: Array<{ name: string; qty: number; price: string }>; total: string; status: string; time: string } | undefined>(undefined)
-  const [orders, setOrders] = useState([
-    {
-      id: "#CMD001",
-      customer: "Jean Dupont",
-      items: [
-        { name: "Poulet DG", qty: 1, price: "3,000 FCFA" },
-        { name: "Jus d'orange", qty: 1, price: "600 FCFA" },
-      ],
-      total: "3,600 FCFA",
-      status: "livrée",
-      time: "14:30",
-      address: "Université Saint Jean, Bloc A",
-    },
-    {
-      id: "#CMD002",
-      customer: "Marie Nkomo",
-      items: [
-        { name: "Ndolé aux crevettes", qty: 2, price: "2,500 FCFA" },
-        { name: "Eau minérale", qty: 2, price: "300 FCFA" },
-      ],
-      total: "5,600 FCFA",
-      status: "en cours",
-      time: "14:45",
-      address: "Université Saint Jean, Bloc B",
-    },
-    {
-      id: "#CMD003",
-      customer: "Pierre Kamga",
-      items: [{ name: "Riz sauté aux légumes", qty: 1, price: "1,800 FCFA" }],
-      total: "1,800 FCFA",
-      status: "aucun",
-      time: "15:00",
-      address: "Université Saint Jean, Bloc C",
-    },
-  ])
+  const [selectedOrder, setSelectedOrder] = useState<Order | undefined>(undefined)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const pendingOrders = orders.filter((o) => o.status === "aucun")
-  const inProgressOrders = orders.filter((o) => o.status === "en cours")
-  const deliveredOrders = orders.filter((o) => o.status === "livrée")
+  useEffect(() => {
+    loadOrders()
+  }, [restaurantId])
 
-  const markAsDelivered = (orderId: string) => {
-    setOrders(orders.map((o) => (o.id === orderId ? { ...o, status: "livrée" } : o)))
+  const loadOrders = async () => {
+    try {
+      setLoading(true)
+      
+      // Utiliser l'API qui contourne RLS
+      const response = await fetch(`/api/resto/${restaurantId}/orders`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error("Erreur API:", data.error)
+        return
+      }
+
+      console.log("Données de l'API:", data)
+      console.log("Debug info:", data.debug)
+
+      const commandes = data.commandes || []
+
+      // Transformer les données
+      const transformedOrders: Order[] = commandes.map((cmd: { id_commande: number; statut: string; created_at: string; montant_total: number; client?: { prenom?: string; nom?: string }; items?: Array<{ name: string; qty: number; price: number }> }) => {
+        let customerName = "Client inconnu"
+        
+        if (cmd.client?.prenom && cmd.client?.nom) {
+          customerName = `${cmd.client.prenom} ${cmd.client.nom}`
+        } else if (cmd.client?.prenom) {
+          customerName = cmd.client.prenom
+        } else if (cmd.client?.nom) {
+          customerName = cmd.client.nom
+        } else if (cmd.client?.id) {
+          customerName = `Client #${cmd.client.id}`
+        }
+        
+        console.log("Client pour commande:", cmd.id_commande, customerName, cmd.client)
+        
+        const items: OrderItem[] = cmd.items?.length > 0 
+          ? cmd.items.map((item: { name: string; qty: number; price: number }) => ({
+              name: item.name,
+              qty: item.qty,
+              price: `${item.price} FCFA`,
+            }))
+          : [{
+              name: "⚠️ Aucun plat",
+              qty: 1,
+              price: "0 FCFA"
+            }]
+
+        const time = cmd.date_commande 
+          ? new Date(cmd.date_commande).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+          : new Date(cmd.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+
+        return {
+          id: cmd.id_commande,
+          customer: customerName,
+          items,
+          total: `${cmd.montant_total || 0} FCFA`,
+          status: cmd.statut?.toLowerCase() || "en_attente",
+          time,
+          address: cmd.client?.numero_tel || "",
+        }
+      })
+
+      console.log("Commandes transformées:", transformedOrders)
+      setOrders(transformedOrders)
+    } catch (error) {
+      console.error("Erreur:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const markAsInProgress = (orderId: string) => {
-    setOrders(orders.map((o) => (o.id === orderId ? { ...o, status: "en cours" } : o)))
+  const refreshOrders = async () => {
+    setRefreshing(true)
+    await loadOrders()
+    setRefreshing(false)
+  }
+
+  const pendingOrders = orders.filter((o) => o.status === "en_attente" || o.status === "aucun")
+  const readyOrders = orders.filter((o) => o.status === "en_preparation" || o.status === "en préparation")
+  const deliveredOrders = orders.filter((o) => o.status === "livree" || o.status === "livrée")
+
+  const markAsDelivered = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from("commande")
+        .update({ statut: "LIVREE" })
+        .eq("id_commande", orderId)
+
+      if (error) throw error
+
+      setOrders(orders.map((o) => (o.id === orderId ? { ...o, status: "livree" } : o)))
+      await loadOrders() // Recharger pour avoir les données à jour
+    } catch (error) {
+      console.error("Erreur mise à jour statut:", error)
+    }
+  }
+
+  const markAsReady = async (orderId: string) => {
+    try {
+      // Essayer EN_PREPARATION qui semble être une valeur valide
+      const { error } = await supabase
+        .from("commande")
+        .update({ statut: "EN_PREPARATION" })
+        .eq("id_commande", orderId)
+
+      if (error) {
+        console.error("Erreur mise à jour statut:", error)
+        throw error
+      }
+
+      setOrders(orders.map((o) => (o.id === orderId ? { ...o, status: "en_preparation" } : o)))
+      await loadOrders() // Recharger pour avoir les données à jour
+    } catch (error) {
+      console.error("Erreur mise à jour statut:", error)
+    }
   }
 
   const OrderRow = ({ order }: { order: { id: string; customer: string; items: Array<{ name: string; qty: number; price: string }>; total: string; status: string; time: string } }) => (
@@ -68,22 +165,22 @@ export default function OrdersPage() {
         </div>
         <Badge
           className={
-            order.status === "livrée"
+            order.status === "livrée" || order.status === "livree"
               ? "bg-green-100 text-green-700"
-              : order.status === "en cours"
-                ? "bg-yellow-100 text-yellow-700"
+              : order.status === "en_preparation" || order.status === "en préparation"
+                ? "bg-blue-100 text-blue-700"
                 : "bg-gray-100 text-gray-700"
           }
         >
-          {order.status === "livrée" ? (
+          {order.status === "livrée" || order.status === "livree" ? (
             <>
               <CheckCircle className="h-3 w-3 mr-1" />
               Livrée
             </>
-          ) : order.status === "en cours" ? (
+          ) : order.status === "en_preparation" || order.status === "en préparation" ? (
             <>
-              <Clock className="h-3 w-3 mr-1" />
-              En cours
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Prêt
             </>
           ) : (
             <>
@@ -111,7 +208,18 @@ export default function OrdersPage() {
             <Eye className="h-4 w-4 mr-1" />
             Détails
           </Button>
-          {order.status === "en cours" && (
+          {(order.status === "en_attente" || order.status === "aucun") && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50 bg-transparent"
+              onClick={() => markAsReady(order.id)}
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Marquer prêt
+            </Button>
+          )}
+          {(order.status === "en_preparation" || order.status === "en préparation") && (
             <Button
               size="sm"
               variant="outline"
@@ -127,11 +235,38 @@ export default function OrdersPage() {
     </div>
   )
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-orange-500 mx-auto mb-4" />
+          <p className="text-gray-600">Chargement des commandes...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Gestion des commandes</h1>
-        <p className="text-gray-600 mt-1">Gérez les commandes en temps réel</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Gestion des commandes</h1>
+          <p className="text-gray-600 mt-1">Gérez les commandes en temps réel</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={refreshOrders}
+          disabled={refreshing}
+          className="border-orange-500 text-orange-600 hover:bg-orange-50"
+        >
+          {refreshing ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-2" />
+          )}
+          Actualiser
+        </Button>
       </div>
 
       <Tabs defaultValue="pending" className="w-full">
@@ -139,8 +274,8 @@ export default function OrdersPage() {
           <TabsTrigger value="pending" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
             En attente ({pendingOrders.length})
           </TabsTrigger>
-          <TabsTrigger value="progress" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
-            En cours ({inProgressOrders.length})
+          <TabsTrigger value="ready" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+            Prêtes ({readyOrders.length})
           </TabsTrigger>
           <TabsTrigger value="delivered" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
             Livrées ({deliveredOrders.length})
@@ -167,18 +302,18 @@ export default function OrdersPage() {
           </Card>
         </TabsContent>
 
-        {/* En cours */}
-        <TabsContent value="progress">
+        {/* Prêtes */}
+        <TabsContent value="ready">
           <Card>
             <CardHeader>
-              <CardTitle>Commandes en cours</CardTitle>
+              <CardTitle>Commandes prêtes</CardTitle>
             </CardHeader>
             <CardContent>
-              {inProgressOrders.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Aucune commande en cours</p>
+              {readyOrders.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">Aucune commande prête</p>
               ) : (
                 <div className="space-y-4">
-                  {inProgressOrders.map((order) => (
+                  {readyOrders.map((order) => (
                     <OrderRow key={order.id} order={order} />
                   ))}
                 </div>
@@ -212,7 +347,7 @@ export default function OrdersPage() {
         open={showDetail}
         onOpenChange={setShowDetail}
         order={selectedOrder}
-        onMarkAsInProgress={markAsInProgress}
+        onMarkAsInProgress={markAsReady}
         onMarkAsDelivered={markAsDelivered}
       />
     </div>

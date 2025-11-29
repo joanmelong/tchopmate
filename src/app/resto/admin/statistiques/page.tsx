@@ -4,13 +4,9 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
-  UtensilsCrossed,
   TrendingUp,
   DollarSign,
   ShoppingBag,
-  Users,
-  LayoutDashboard,
-  BarChart3,
   Calendar,
   Clock,
 } from "lucide-react"

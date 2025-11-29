@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/logo"
+import { NotificationBell } from "@/components/notification-bell"
 import {
   ArrowLeft,
   Package,
@@ -16,7 +17,6 @@ import {
   User,
   Calendar,
   CreditCard,
-  Bell,
   Menu,
   ShoppingBag,
   Utensils,
@@ -29,13 +29,20 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { supabase } from "@/lib/supabaseClient"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
+import { QRCodeButton } from "@/components/ui/qr-code-button"
+import { QRCodeModal } from "@/components/ui/qr-code-modal"
+import { useOrderQRCode } from "@/hooks/use-order-qrcode"
+import { Order as OrderEntity, OrderItem as OrderItemEntity, OrderStatus } from "@/core/entities/Order"
 
 type OrderItem = {
-  id: number
+  id: number | string
   name: string
   quantity: number
-  price: number
+  price: number | string
   image: string
+  description?: string | null
+  categorie?: string | null
+  temps_preparation?: number | null
 }
 
 type Order = {
@@ -49,33 +56,250 @@ type Order = {
   restaurantAddress: string
 }
 
+// Type pour les données de l'API
+type ApiCommandeItem = {
+  id?: string | number
+  plat_id?: string
+  quantite?: number
+  quantity?: number
+  plat?: {
+    nom?: string
+    prix?: number
+    image_url?: string
+    description?: string
+    categorie?: string
+    temps_preparation?: number
+  }
+  name?: string
+  price?: number
+  image?: string
+  description?: string
+  categorie?: string
+  temps_preparation?: number
+}
+
+type ApiCommande = {
+  id_commande?: string
+  id?: string
+  date_commande?: string
+  created_at?: string
+  date?: string
+  statut?: string
+  montant_total?: number
+  total?: number
+  clientName?: string
+  client_name?: string
+  clientPhone?: string
+  client_phone?: string
+  restaurantAddress?: string
+  restaurant_address?: string
+  items?: ApiCommandeItem[]
+  client?: {
+    id?: number
+    nom?: string
+    prenom?: string
+    email?: string
+    numero_tel?: string
+  }
+}
+
+// Fonction pour transformer les données de l'API en format Order
+function transformApiCommande(apiCommande: ApiCommande): Order | null {
+  try {
+    // Transformer les items avec toutes les informations du plat
+    const items: OrderItem[] = (apiCommande.items || []).map((item: ApiCommandeItem, index: number) => {
+      const plat = item.plat || {}
+      return {
+        id: item.id || item.plat_id || index, // Utiliser id, plat_id, ou index comme clé unique
+        name: plat.nom || item.name || 'Plat inconnu',
+        quantity: item.quantite || item.quantity || 1,
+        price: plat.prix || item.price || 0,
+        image: plat.image_url || item.image || '/placeholder.svg',
+        description: plat.description || item.description || null,
+        categorie: plat.categorie || item.categorie || null,
+        temps_preparation: plat.temps_preparation || item.temps_preparation || null,
+      }
+    })
+
+    // Déterminer le statut
+    let status: "en_cours" | "livree" = "en_cours"
+    if (apiCommande.statut) {
+      const statutLower = apiCommande.statut.toLowerCase()
+      if (statutLower === 'livree' || statutLower === 'livré' || statutLower === 'livre') {
+        status = "livree"
+      } else {
+        status = "en_cours"
+      }
+    }
+
+    // Récupérer les informations client depuis l'API ou utiliser les valeurs par défaut
+    const client = apiCommande.client || {}
+    const clientName = client.nom && client.prenom
+      ? `${client.prenom} ${client.nom}`
+      : apiCommande.clientName || apiCommande.client_name || 'Client'
+    const clientPhone = client.numero_tel || apiCommande.clientPhone || apiCommande.client_phone || ''
+
+    return {
+      id: apiCommande.id_commande || apiCommande.id || `CMD-${Date.now()}`,
+      date: apiCommande.date_commande || apiCommande.created_at || apiCommande.date || new Date().toISOString(),
+      status,
+      items,
+      total: apiCommande.montant_total || apiCommande.total || 0,
+      clientName,
+      clientPhone,
+      restaurantAddress: apiCommande.restaurantAddress || apiCommande.restaurant_address || 'Adresse non disponible',
+    }
+  } catch (e) {
+    console.error('Erreur transformation commande:', e, apiCommande)
+    return null
+  }
+}
+
 export default function CommandesPage() {
   const router = useRouter()
   const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [userProfile, setUserProfile] = useState<{ nom: string; prenom: string } | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [ordersLoading, setOrdersLoading] = useState(true)
+
+  const [orders, setOrders] = useState<Order[]>([])
+
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false)
+  const [currentOrderForQR, setCurrentOrderForQR] = useState<Order | null>(null)
+  const { qrCode, isGenerating, generateQRCode, resetQRCode } = useOrderQRCode()
+
 
   useEffect(() => {
     const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        setUser(user)
+        
+        // Charger le profil depuis la table compte
+        if (user) {
+          const { data: compte } = await supabase
+            .from("compte")
+            .select("nom, prenom")
+            .eq("user_id", user.id)
+            .maybeSingle()
+          
+          if (compte) {
+            setUserProfile(compte)
+          }
+        }
+      } catch (error) {
+        console.error('Erreur récupération utilisateur:', error)
+      } finally {
+        setAuthLoading(false)
+      }
     }
 
     getUser()
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      
+      // Charger le profil lors du changement de session
+      if (session?.user) {
+        const { data: compte } = await supabase
+          .from("compte")
+          .select("nom, prenom")
+          .eq("user_id", session.user.id)
+          .maybeSingle()
+        
+        if (compte) {
+          setUserProfile(compte)
+        }
+      } else {
+        setUserProfile(null)
+      }
+      
+      setAuthLoading(false)
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  const orders: Order[] = [
+  // Charger depuis localStorage au démarrage (seulement si connecté)
+  useEffect(() => {
+    if (!user) return
+    
+    const savedOrders = localStorage.getItem('tchopmate-orders')
+    if (savedOrders) {
+      try {
+        const parsed = JSON.parse(savedOrders)
+        console.log('Commandes chargées depuis localStorage:', parsed)
+        setOrders(parsed)
+      } catch (e) {
+        console.warn('Erreur lecture commandes localStorage', e)
+        setOrders([])
+      }
+    }
+  }, [user])
+
+  // Synchroniser avec la BD (fetch depuis l'API et mettre à jour localStorage)
+  useEffect(() => {
+    if (!user) {
+      setOrdersLoading(false)
+      return
+    }
+
+    const syncFromApi = async () => {
+      try {
+        setOrdersLoading(true)
+        const mod = await import('@/services/commandes')
+        console.log('Appel API getCommandes...')
+        const commandes = await mod.getCommandes()
+        
+        if (Array.isArray(commandes) && commandes.length > 0) {
+          console.log('Commandes reçues de l\'API:', commandes)
+          
+          // Transformer les données de l'API au format Order
+          const transformedOrders = commandes
+            .map(transformApiCommande)
+            .filter((order): order is Order => order !== null)
+          
+          console.log('Commandes transformées:', transformedOrders)
+          
+          if (transformedOrders.length > 0) {
+            // Mettre à jour l'état
+            setOrders(transformedOrders)
+            
+            // Synchroniser avec localStorage
+            try {
+              localStorage.setItem('tchopmate-orders', JSON.stringify(transformedOrders))
+              console.log('Commandes synchronisées avec localStorage')
+            } catch (e) {
+              console.warn('Erreur sauvegarde commandes localStorage', e)
+            }
+          }
+        } else {
+          console.log('Pas de commandes reçues de l\'API')
+          // Ne pas effacer les commandes si l'API ne retourne rien
+          // Garder les données localStorage existantes
+        }
+      } catch (e: unknown) {
+        console.warn('Erreur synchronisation API:', e instanceof Error ? e.message : String(e))
+        // Ne pas effacer les commandes en cas d'erreur API
+        // Garder les données localStorage existantes
+      } finally {
+        setOrdersLoading(false)
+      }
+    }
+
+    // Donner un délai court pour que l'authentification soit en place
+    const timer = setTimeout(syncFromApi, 500)
+    return () => clearTimeout(timer)
+  }, [user])
+
+  const defaultOrders: Order[] = [
     {
       id: "CMD-001",
       date: "2024-10-22 12:30",
@@ -87,6 +311,9 @@ export default function CommandesPage() {
           quantity: 2,
           price: 2500,
           image: "/ndole-camerounais-plat-traditionnel.jpg",
+          description: "Plat traditionnel camerounais avec des feuilles de ndolé, des crevettes et de la viande",
+          categorie: "Plat principal",
+          temps_preparation: 45,
         },
         {
           id: 4,
@@ -94,6 +321,9 @@ export default function CommandesPage() {
           quantity: 2,
           price: 500,
           image: "/jus-bissap-hibiscus-rouge.jpg",
+          description: "Jus frais de fleurs d'hibiscus, rafraîchissant et naturel",
+          categorie: "Boisson",
+          temps_preparation: 5,
         },
       ],
       total: 6000,
@@ -112,6 +342,9 @@ export default function CommandesPage() {
           quantity: 1,
           price: 3000,
           image: "/poulet-dg-cameroun-plantain.jpg",
+          description: "Poulet sauté avec plantain, légumes et épices camerounaises",
+          categorie: "Plat principal",
+          temps_preparation: 35,
         },
         {
           id: 3,
@@ -119,6 +352,9 @@ export default function CommandesPage() {
           quantity: 1,
           price: 1800,
           image: "/riz-saut--l-gumes.jpg",
+          description: "Riz sauté avec une variété de légumes frais et épices",
+          categorie: "Plat principal",
+          temps_preparation: 25,
         },
         {
           id: 5,
@@ -126,6 +362,9 @@ export default function CommandesPage() {
           quantity: 1,
           price: 600,
           image: "/jus-orange-frais.jpg",
+          description: "Jus d'orange pressé fraîchement, riche en vitamine C",
+          categorie: "Boisson",
+          temps_preparation: 5,
         },
       ],
       total: 5400,
@@ -144,6 +383,9 @@ export default function CommandesPage() {
           quantity: 3,
           price: 800,
           image: "/banane-plantain-grill-e.jpg",
+          description: "Bananes plantains grillées, servies chaudes",
+          categorie: "Accompagnement",
+          temps_preparation: 15,
         },
         {
           id: 6,
@@ -151,6 +393,9 @@ export default function CommandesPage() {
           quantity: 2,
           price: 300,
           image: "/bouteille-eau-min-rale.jpg",
+          description: "Eau minérale naturelle",
+          categorie: "Boisson",
+          temps_preparation: 0,
         },
       ],
       total: 3000,
@@ -169,6 +414,9 @@ export default function CommandesPage() {
           quantity: 2,
           price: 1000,
           image: "/beignets-haricots-cameroun-frits.jpg",
+          description: "Beignets de haricots frits, croustillants et savoureux",
+          categorie: "Snack",
+          temps_preparation: 20,
         },
       ],
       total: 2000,
@@ -177,6 +425,16 @@ export default function CommandesPage() {
       restaurantAddress: "Restaurant Universitaire Saint Jean, Campus Principal, Yaoundé",
     },
   ]
+
+  // Charger les commandes par défaut seulement si pas d'utilisateur et pas de commandes
+  useEffect(() => {
+    // Ne charger les commandes par défaut que si l'utilisateur n'est pas connecté
+    // et qu'il n'y a pas de commandes dans localStorage
+    if (!authLoading && !user && orders.length === 0) {
+      setOrders(defaultOrders)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user])
 
   const getStatusBadge = (status: Order["status"]) => {
     switch (status) {
@@ -200,6 +458,17 @@ export default function CommandesPage() {
   const openOrderDetail = (order: Order) => {
     setSelectedOrder(order)
     setIsDetailOpen(true)
+  }
+
+  const handleShowQRCode = async (order: Order) => {
+    // Rediriger vers la page QR code avec l'ID de la commande
+    router.push(`/commande/qrcode?orderId=${encodeURIComponent(order.id)}`)
+  }
+
+  const handleCloseQRModal = () => {
+    setIsQRModalOpen(false)
+    resetQRCode()
+    setCurrentOrderForQR(null)
   }
 
   return (
@@ -238,25 +507,23 @@ export default function CommandesPage() {
                 Favoris
               </Button>
 
-              <Button variant="ghost" size="sm" className="relative hover:bg-orange-50">
-                <Bell className="h-5 w-5 text-gray-600" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-orange-500 text-white text-xs">
-                  3
-                </Badge>
-              </Button>
+              <NotificationBell />
 
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8 cursor-pointer border-2 border-orange-200">
+              <div 
+                className="flex items-center space-x-2 cursor-pointer hover:bg-orange-50 rounded-lg p-2 transition-colors"
+                onClick={() => router.push("/profil")}
+              >
+                <Avatar className="h-8 w-8 border-2 border-orange-200">
                   <AvatarImage src={user?.user_metadata?.avatar_url || "/student-avatar.png"} />
                   <AvatarFallback className="bg-orange-100 text-orange-600 font-semibold">
-                    {user?.email?.charAt(0).toUpperCase() || "ET"}
+                    {userProfile ? `${userProfile.prenom.charAt(0)}${userProfile.nom.charAt(0)}`.toUpperCase() : user?.email?.charAt(0).toUpperCase() || "ET"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">
-                    {user?.user_metadata?.full_name || user?.email || "Étudiant"}
+                    {userProfile ? `${userProfile.prenom} ${userProfile.nom}` : user?.user_metadata?.full_name || user?.email || "Étudiant"}
                   </p>
-                  <p className="text-xs text-gray-500">Université Saint Jean</p>
+                  <p className="text-xs text-gray-500">Voir le profil</p>
                 </div>
               </div>
             </div>
@@ -274,12 +541,12 @@ export default function CommandesPage() {
                       <Avatar className="h-12 w-12 border-2 border-orange-200">
                         <AvatarImage src={user?.user_metadata?.avatar_url || "/student-avatar.png"} />
                         <AvatarFallback className="bg-orange-100 text-orange-600 font-semibold">
-                          {user?.email?.charAt(0).toUpperCase() || "ET"}
+                          {userProfile ? `${userProfile.prenom.charAt(0)}${userProfile.nom.charAt(0)}`.toUpperCase() : user?.email?.charAt(0).toUpperCase() || "ET"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-semibold text-gray-900">
-                          {user?.user_metadata?.full_name || user?.email || "Étudiant"}
+                          {userProfile ? `${userProfile.prenom} ${userProfile.nom}` : user?.user_metadata?.full_name || user?.email || "Étudiant"}
                         </p>
                         <p className="text-sm text-gray-500">Université Saint Jean</p>
                       </div>
@@ -309,15 +576,22 @@ export default function CommandesPage() {
                       Favoris
                     </Button>
 
-                    <Button variant="ghost" className="justify-start relative" asChild>
-                      <div>
-                        <Bell className="h-5 w-5 mr-2" />
-                        Notifications
-                        <Badge className="ml-auto h-5 w-5 rounded-full p-0 flex items-center justify-center bg-orange-500 text-white text-xs">
-                          3
-                        </Badge>
-                      </div>
+                    <Button
+                      variant="ghost"
+                      className="justify-start"
+                      onClick={() => {
+                        router.push("/profil")
+                        setIsMobileMenuOpen(false)
+                      }}
+                    >
+                      <User className="h-5 w-5 mr-2" />
+                      Mon Profil
                     </Button>
+
+                    <div className="flex items-center justify-start">
+                      <NotificationBell />
+                      <span className="ml-2">Notifications</span>
+                    </div>
                   </div>
                 </SheetContent>
               </Sheet>
@@ -344,10 +618,16 @@ export default function CommandesPage() {
         </div>
 
         {/* Orders List */}
-        <div className="space-y-4">
-          {orders.map((order) => (
+        {!authLoading && !ordersLoading && user && orders.length > 0 && (
+          <div className="space-y-4">
+            <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-700 font-medium">
+                📋 Vous consultez vos commandes en attente. Une fois prêtes, vous recevrez une notification !
+              </p>
+            </div>
+            {orders.map((order, orderIndex) => (
             <Card
-              key={order.id}
+              key={order.id || `order-${orderIndex}`}
               className="overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-orange-200"
             >
               <CardHeader className="bg-gradient-to-r from-orange-50 to-yellow-50 pb-3">
@@ -378,8 +658,12 @@ export default function CommandesPage() {
                       Articles commandés:
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {order.items.map((item) => (
-                        <Badge key={item.id} variant="outline" className="bg-white border-orange-200 text-gray-700">
+                      {order.items.map((item, index) => (
+                        <Badge 
+                          key={item.id !== undefined ? `item-${order.id}-${item.id}` : `item-${order.id}-${index}`} 
+                          variant="outline" 
+                          className="bg-white border-orange-200 text-gray-700"
+                        >
                           {item.name} (x{item.quantity})
                         </Badge>
                       ))}
@@ -397,26 +681,56 @@ export default function CommandesPage() {
                         <p className="text-lg font-bold text-orange-600">{order.total} FCFA</p>
                       </div>
                     </div>
-                    <Button
-                      className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
-                      onClick={() => openOrderDetail(order)}
-                    >
-                      Voir détails
-                    </Button>
+                    <div className="flex gap-2">
+                      <QRCodeButton onClick={() => handleShowQRCode(order)} size="sm" />
+                      <Button
+                        className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                        onClick={() => openOrderDetail(order)}
+                      >
+                        Voir détails
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {orders.length === 0 && (
+        {/* État de chargement */}
+        {(authLoading || ordersLoading) && (
+          <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Chargement de vos commandes...</p>
+          </div>
+        )}
+
+        {/* Utilisateur non connecté */}
+        {!authLoading && !user && (
+          <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
+            <div className="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <User className="h-10 w-10 text-red-500" />
+            </div>
+            <p className="text-gray-900 text-xl mb-2 font-bold">Vous n&apos;êtes pas connecté</p>
+            <p className="text-gray-600 mb-6">Connectez-vous pour voir vos commandes</p>
+            <Button
+              className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-md"
+              onClick={() => router.push("/login?redirect=/commandes")}
+            >
+              Se connecter
+            </Button>
+          </div>
+        )}
+
+        {/* Utilisateur connecté mais aucune commande */}
+        {!authLoading && !ordersLoading && user && orders.length === 0 && (
           <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
             <div className="bg-orange-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Package className="h-10 w-10 text-orange-500" />
             </div>
-            <p className="text-gray-600 text-lg mb-2 font-semibold">Aucune commande pour le moment</p>
-            <p className="text-gray-500 mb-6">Commencez à explorer notre délicieux menu</p>
+            <p className="text-gray-900 text-xl mb-2 font-bold">Aucune commande pour le moment</p>
+            <p className="text-gray-600 mb-6">Commencez à explorer notre délicieux menu</p>
             <Button
               className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-md"
               onClick={() => router.push("/menu")}
@@ -503,31 +817,62 @@ export default function CommandesPage() {
                   <ShoppingBag className="h-5 w-5 text-orange-500" />
                   Éléments de la commande
                 </h3>
-                <div className="space-y-3">
-                  {selectedOrder.items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200 hover:shadow-md transition-shadow"
-                    >
-                      <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0">
-                        <Image
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.name}
-                          fill
-                          className="object-cover rounded-md border-2 border-orange-200"
-                        />
+                <div className="space-y-4">
+                  {selectedOrder.items.map((item, index) => {
+                    const itemPrice = typeof item.price === 'string' ? Number.parseInt(item.price.replace(/\D/g, '')) : Number(item.price) || 0
+                    const totalPrice = itemPrice * item.quantity
+                    
+                    return (
+                      <div
+                        key={item.id !== undefined ? `detail-item-${selectedOrder.id}-${item.id}` : `detail-item-${selectedOrder.id}-${index}`}
+                        className="p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0">
+                            <Image
+                              src={item.image || "/placeholder.svg"}
+                              alt={item.name}
+                              fill
+                              className="object-cover rounded-md border-2 border-orange-200"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="flex-1">
+                                <h4 className="font-bold text-base sm:text-lg text-gray-900 mb-1">{item.name}</h4>
+                                {item.categorie && (
+                                  <Badge variant="outline" className="text-xs mb-2 border-orange-300 text-orange-700 bg-orange-100">
+                                    {item.categorie}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <p className="font-bold text-orange-600 text-lg">
+                                  {totalPrice} FCFA
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {itemPrice} FCFA × {item.quantity}
+                                </p>
+                              </div>
+                            </div>
+                            {item.description && (
+                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                                {item.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              {item.temps_preparation && (
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  <span>Préparation: {item.temps_preparation} min</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-sm sm:text-base text-gray-900">{item.name}</h4>
-                        <p className="text-xs sm:text-sm text-gray-600 font-medium">
-                          {item.price} FCFA × {item.quantity}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-orange-600 text-lg">{item.price * item.quantity} FCFA</p>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 
@@ -560,6 +905,15 @@ export default function CommandesPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* QR Code Modal */}
+      <QRCodeModal
+        isOpen={isQRModalOpen}
+        onClose={handleCloseQRModal}
+        qrCodeDataUrl={qrCode}
+        orderId={currentOrderForQR?.id || ""}
+        isLoading={isGenerating}
+      />
 
       {/* Footer */}
       <Footer />
